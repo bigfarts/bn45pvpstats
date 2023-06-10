@@ -99,7 +99,8 @@ async fn handle_submit_request(
     log::info!("received metadata: {:?}", metadata);
 
     // We are only collecting ROCKEXE4.5ROBR4J real_bn_gameplay data.
-    if game_info.rom_family != "exe45" || game_info.rom_variant != 0
+    if game_info.rom_family != "exe45"
+        || game_info.rom_variant != 0
         || !(game_info
             .patch
             .as_ref()
@@ -151,7 +152,11 @@ async fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_default_env()
         .filter(Some("collectorserver"), log::LevelFilter::Info)
         .init();
+
     let args = Args::parse();
+
+    std::fs::create_dir_all(&args.pending_replays_dir)?;
+
     let addr = args.listen_addr.parse()?;
     let router = router(args.pending_replays_dir);
     let service = routerify::RouterService::new(router).unwrap();

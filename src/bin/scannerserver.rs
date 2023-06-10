@@ -210,7 +210,7 @@ async fn process_one(
 
     if result.outcome != tango_pvp::stepper::BattleOutcome::Win {
         // Only keep track of wins.
-        return Ok(());
+        return Err(anyhow::anyhow!("is loss"));
     }
 
     let turns = state.wram()[0x00033018];
@@ -220,6 +220,7 @@ async fn process_one(
         "
         insert into rounds (hash, ts, turns, winner, loser, netplay_compatibility)
         values ($1, $2, $3, $4, $5, $6)
+        on conflict (hash) do nothing
         ",
         hash,
         ts,
@@ -239,6 +240,7 @@ async fn process_one(
                 "
                 insert into folder_chips (rounds_hash, is_winner, idx, chip_id, chip_code, is_regchip)
                 values ($1, $2, $3, $4, $5, $6)
+                on conflict (rounds_hash, is_winner, idx) do nothing
                 ",
                 hash,
                 is_winner,
