@@ -96,10 +96,15 @@ async fn run_once(
         .filter(|entry| entry.path().extension() == Some(std::ffi::OsStr::new("tangoreplay")))
         .collect::<Vec<_>>();
 
+    let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(num_cpus::get()));
+
     futures_util::future::join_all(hashed_replays.into_iter().map(|entry| {
         let args = args.clone();
         let db_pool = db_pool.clone();
+        let sem = sem.clone();
         tokio::spawn(async move {
+            let _permit = sem.acquire().await.unwrap();
+
             let replay_path = entry.path();
 
             if let Err(err) = process_one(&args, &replay_path, db_pool).await {

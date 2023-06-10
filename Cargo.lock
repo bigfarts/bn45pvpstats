@@ -219,6 +219,7 @@ dependencies = [
  "itertools 0.10.5",
  "log",
  "mgba",
+ "num_cpus",
  "prost",
  "reqwest",
  "routerify",
