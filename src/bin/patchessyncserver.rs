@@ -28,7 +28,7 @@ async fn run_once(root: &std::path::Path) -> Result<(), anyhow::Error> {
         &root,
         &entries,
         {
-            let root = root.clone();
+            let root = root.to_path_buf();
             move |path| {
                 let root = root.clone();
                 Box::pin(async move {
