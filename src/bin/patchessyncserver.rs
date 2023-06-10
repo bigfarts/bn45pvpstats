@@ -2,7 +2,7 @@ use futures::StreamExt;
 use itertools::Itertools;
 use tokio::io::AsyncWriteExt;
 
-async fn run_once() -> Result<(), anyhow::Error> {
+async fn run_once(root: &std::path::Path) -> Result<(), anyhow::Error> {
     let client = reqwest::Client::new();
     let entries = tokio::time::timeout(
         // 30 second timeout to fetch JSON.
@@ -82,7 +82,7 @@ async fn main() -> Result<(), anyhow::Error> {
     std::fs::create_dir_all(root)?;
 
     loop {
-        if let Err(err) = run_once().await {
+        if let Err(err) = run_once(root).await {
             log::error!("patch sync error: {}", err);
         }
 
