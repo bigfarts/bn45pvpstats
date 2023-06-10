@@ -250,6 +250,8 @@ async fn process_one(
         ));
     }
 
+    log::info!("replay {} accepted", replay_path.display());
+
     let turns = state.wram()[0x00033018];
 
     let mut tx = db_pool
