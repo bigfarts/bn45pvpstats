@@ -16,3 +16,9 @@ create table folder_chips
 , is_regchip boolean not null
 , primary key (rounds_hash, is_winner, idx)
 );
+
+create index on rounds(winner, netplay_compatibility);
+create index on rounds(loser, netplay_compatibility);
+create index on rounds(ts, netplay_compatibility);
+create index on rounds(netplay_compatibility);
+create index on folder_chips(chip_id, chip_code);
