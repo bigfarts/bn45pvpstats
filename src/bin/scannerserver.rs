@@ -28,7 +28,7 @@ struct Args {
 
     #[clap(
         long,
-        default_value = "postgres://bn45pvpstats@%2Fvar%2Flib%2Fpostgresql/bn45pvpstats"
+        default_value = "postgres://bn45pvpstats@%2Fvar%2Frun%2Fpostgresql/bn45pvpstats"
     )]
     db: String,
 }
