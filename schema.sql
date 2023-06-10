@@ -8,7 +8,7 @@ create table rounds
 );
 
 create table folder_chips
-( rounds_hash bytea not null
+( rounds_hash bytea not null foreign key references rounds (hash)
 , is_winner boolean not null
 , idx integer not null
 , chip_id integer not null
