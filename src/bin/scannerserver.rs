@@ -281,7 +281,7 @@ async fn main() -> anyhow::Result<()> {
     std::fs::create_dir_all(&args.rejected_replays_dir)?;
 
     let db_pool = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(50)
         .connect(&args.db)
         .await?;
 
