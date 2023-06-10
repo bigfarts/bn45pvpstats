@@ -271,7 +271,7 @@ async fn process_one(
         remote_navi as i32,
         netplay_compatibility
     )
-    .execute(&mut tx)
+    .execute(&mut *tx)
     .await
     .map_err(|e| ProcessError::Retriable(e.into()))?;
     for (is_winner, chips, regchip) in [
@@ -292,7 +292,7 @@ async fn process_one(
                 chip_code.to_string(),
                 regchip == Some(i),
             )
-            .execute(&mut tx)
+            .execute(&mut *tx)
             .await.map_err(|e| ProcessError::Retriable(e.into()))?;
         }
     }
