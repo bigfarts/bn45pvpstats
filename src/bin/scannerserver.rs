@@ -104,12 +104,14 @@ async fn run_once(
 
             if let Err(err) = process_one(&args, &replay_path, db_pool).await {
                 log::error!("process one error for {}: {}", replay_path.display(), err);
-                std::fs::rename(
-                    &replay_path,
-                    args.rejected_replays_dir
-                        .join(replay_path.file_name().unwrap()),
-                )
-                .unwrap();
+                if matches!(err, ProcessError::NonRetriable(_)) {
+                    std::fs::rename(
+                        &replay_path,
+                        args.rejected_replays_dir
+                            .join(replay_path.file_name().unwrap()),
+                    )
+                    .unwrap();
+                }
             } else {
                 log::info!("process one done for {}", replay_path.display());
                 std::fs::rename(
@@ -125,14 +127,26 @@ async fn run_once(
     Ok(())
 }
 
+#[derive(thiserror::Error, Debug)]
+enum ProcessError {
+    #[error("non-retriable: {0}")]
+    NonRetriable(#[from] anyhow::Error),
+
+    #[error("retriable: {0}")]
+    Retriable(anyhow::Error),
+}
+
 async fn process_one(
     _args: &Args,
     replay_path: &std::path::Path,
     db_pool: sqlx::Pool<sqlx::postgres::Postgres>,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), ProcessError> {
     log::info!("processing {}", replay_path.display());
 
-    let replay = tango_pvp::replay::Replay::decode(&mut std::fs::File::open(replay_path)?)?;
+    let replay = tango_pvp::replay::Replay::decode(
+        &mut std::fs::File::open(replay_path).map_err(|e| ProcessError::NonRetriable(e.into()))?,
+    )
+    .map_err(|e| ProcessError::NonRetriable(e.into()))?;
     let hash = hash_replay(&replay);
 
     let ts = sqlx::types::time::OffsetDateTime::from(
@@ -147,16 +161,17 @@ async fn process_one(
         .unwrap();
 
     if game_info.rom_family != "exe45" || game_info.rom_variant != 0 {
-        return Err(anyhow::format_err!("bad game: {:?}", game_info));
+        return Err(anyhow::format_err!("bad game: {:?}", game_info).into());
     }
 
     let patch_info = if let Some(patch) = game_info.patch.as_ref() {
         patch
     } else {
-        return Err(anyhow::anyhow!("no patch info"));
+        return Err(anyhow::anyhow!("no patch info").into());
     };
 
-    let local_save = tango_dataview::game::exe45::save::Save::from_wram(replay.local_state.wram())?;
+    let local_save = tango_dataview::game::exe45::save::Save::from_wram(replay.local_state.wram())
+        .map_err(|e| ProcessError::NonRetriable(e.into()))?;
     let (local_navi, local_chips, local_regchip) = {
         let link_navi_view = match local_save.view_navi().unwrap() {
             tango_dataview::save::NaviView::LinkNavi(view) => view,
@@ -176,7 +191,8 @@ async fn process_one(
     };
 
     let remote_save =
-        tango_dataview::game::exe45::save::Save::from_wram(replay.remote_state.wram())?;
+        tango_dataview::game::exe45::save::Save::from_wram(replay.remote_state.wram())
+            .map_err(|e| ProcessError::NonRetriable(e.into()))?;
     let (remote_navi, remote_chips, remote_regchip) = {
         let link_navi_view = match remote_save.view_navi().unwrap() {
             tango_dataview::save::NaviView::LinkNavi(view) => view,
@@ -195,36 +211,43 @@ async fn process_one(
         )
     };
 
-    let rom = std::fs::read("exe45.gba")?;
+    let rom = std::fs::read("exe45.gba").map_err(|e| ProcessError::Retriable(e.into()))?;
 
     let patch = std::fs::read(format!(
         "patches/{}/v{}/BR4J_00.bps",
         patch_info.name, patch_info.version
-    ))?;
-    let patch_metadata = toml::from_slice::<PatchMetadata>(&std::fs::read(&format!(
-        "patches/{}/info.toml",
-        patch_info.name
-    ))?)?;
+    ))
+    .map_err(|e| ProcessError::Retriable(e.into()))?;
+    let patch_metadata = toml::from_slice::<PatchMetadata>(
+        &std::fs::read(&format!("patches/{}/info.toml", patch_info.name))
+            .map_err(|e| ProcessError::Retriable(e.into()))?,
+    )
+    .map_err(|e| ProcessError::Retriable(e.into()))?;
     let netplay_compatibility = patch_metadata
         .versions
         .get(&patch_info.version)
         .map(|v| v.netplay_compatibility.clone())
         .ok_or_else(|| anyhow::anyhow!("invalid version"))?;
-    let patch = bps::Patch::decode(&patch)?;
+    let patch = bps::Patch::decode(&patch).map_err(|e| ProcessError::NonRetriable(e.into()))?;
 
-    let rom = patch.apply(&rom)?;
+    let rom = patch
+        .apply(&rom)
+        .map_err(|e| ProcessError::NonRetriable(e.into()))?;
 
     let hooks = tango_pvp::hooks::hooks_for_gamedb_entry(&tango_gamedb::BR4J_00).unwrap();
     let (result, state) = tango_pvp::eval::eval(&replay, &rom, hooks).await?;
 
     if result.outcome != tango_pvp::stepper::BattleOutcome::Win {
         // Only keep track of wins.
-        return Err(anyhow::anyhow!("is loss"));
+        return Err(anyhow::anyhow!("is loss").into());
     }
 
     let turns = state.wram()[0x00033018];
 
-    let mut tx = db_pool.begin().await?;
+    let mut tx = db_pool
+        .begin()
+        .await
+        .map_err(|e| ProcessError::Retriable(e.into()))?;
     sqlx::query!(
         "
         insert into rounds (hash, ts, turns, winner, loser, netplay_compatibility)
@@ -239,7 +262,8 @@ async fn process_one(
         netplay_compatibility
     )
     .execute(&mut tx)
-    .await?;
+    .await
+    .map_err(|e| ProcessError::Retriable(e.into()))?;
     for (is_winner, chips, regchip) in [
         (true, local_chips, local_regchip),
         (false, remote_chips, remote_regchip),
@@ -259,10 +283,12 @@ async fn process_one(
                 regchip == Some(i),
             )
             .execute(&mut tx)
-            .await?;
+            .await.map_err(|e| ProcessError::Retriable(e.into()))?;
         }
     }
-    tx.commit().await?;
+    tx.commit()
+        .await
+        .map_err(|e| ProcessError::Retriable(e.into()))?;
 
     Ok(())
 }

@@ -229,6 +229,7 @@ dependencies = [
  "tango-filesync",
  "tango-gamedb",
  "tango-pvp",
+ "thiserror",
  "tokio",
  "tokio-util",
  "toml",
