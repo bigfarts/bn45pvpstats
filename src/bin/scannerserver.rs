@@ -130,7 +130,7 @@ async fn run_once(
 #[derive(thiserror::Error, Debug)]
 enum ProcessError {
     #[error("non-retriable: {0}")]
-    NonRetriable(#[from] anyhow::Error),
+    NonRetriable(anyhow::Error),
 
     #[error("retriable: {0}")]
     Retriable(anyhow::Error),
@@ -161,13 +161,17 @@ async fn process_one(
         .unwrap();
 
     if game_info.rom_family != "exe45" || game_info.rom_variant != 0 {
-        return Err(anyhow::format_err!("bad game: {:?}", game_info).into());
+        return Err(ProcessError::NonRetriable(
+            anyhow::format_err!("bad game: {:?}", game_info).into(),
+        ));
     }
 
     let patch_info = if let Some(patch) = game_info.patch.as_ref() {
         patch
     } else {
-        return Err(anyhow::anyhow!("no patch info").into());
+        return Err(ProcessError::NonRetriable(
+            anyhow::anyhow!("no patch info").into(),
+        ));
     };
 
     let local_save = tango_dataview::game::exe45::save::Save::from_wram(replay.local_state.wram())
@@ -227,7 +231,7 @@ async fn process_one(
         .versions
         .get(&patch_info.version)
         .map(|v| v.netplay_compatibility.clone())
-        .ok_or_else(|| anyhow::anyhow!("invalid version"))?;
+        .ok_or_else(|| ProcessError::Retriable(anyhow::anyhow!("invalid version")))?;
     let patch = bps::Patch::decode(&patch).map_err(|e| ProcessError::NonRetriable(e.into()))?;
 
     let rom = patch
@@ -235,11 +239,15 @@ async fn process_one(
         .map_err(|e| ProcessError::NonRetriable(e.into()))?;
 
     let hooks = tango_pvp::hooks::hooks_for_gamedb_entry(&tango_gamedb::BR4J_00).unwrap();
-    let (result, state) = tango_pvp::eval::eval(&replay, &rom, hooks).await?;
+    let (result, state) = tango_pvp::eval::eval(&replay, &rom, hooks)
+        .await
+        .map_err(|e| ProcessError::NonRetriable(e.into()))?;
 
     if result.outcome != tango_pvp::stepper::BattleOutcome::Win {
         // Only keep track of wins.
-        return Err(anyhow::anyhow!("is loss").into());
+        return Err(ProcessError::NonRetriable(
+            anyhow::anyhow!("is loss").into(),
+        ));
     }
 
     let turns = state.wram()[0x00033018];
