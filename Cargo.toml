@@ -16,6 +16,7 @@ itertools = "0.10"
 log = "0.4"
 mgba = { path = "../tango/mgba" }
 prost = "0.10"
+rayon = "1.7"
 reqwest = { version = "0.11", features = ["stream", "json"] }
 routerify = "3.0"
 sha3 = "0.10"
