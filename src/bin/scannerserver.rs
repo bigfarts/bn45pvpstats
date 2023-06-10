@@ -100,10 +100,11 @@ async fn run_once(
             let replay_path = entry.path();
 
             if let Err(err) = process_one(&args, &replay_path, db_pool).await {
-                log::error!("process one error for {}: {}", entry.path().display(), err);
+                log::error!("process one error for {}: {}", replay_path.display(), err);
+            } else {
+                log::info!("process one done for {}", replay_path.display());
             }
 
-            log::info!("process: {} -> done", replay_path.display());
             std::fs::rename(
                 &replay_path,
                 args.done_replays_dir.join(replay_path.file_name().unwrap()),
