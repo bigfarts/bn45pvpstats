@@ -23,6 +23,9 @@ struct Args {
     #[clap(long, default_value = "done_replays")]
     done_replays_dir: std::path::PathBuf,
 
+    #[clap(long, default_value = "rejected_replays")]
+    rejected_replays_dir: std::path::PathBuf,
+
     #[clap(
         long,
         default_value = "postgres://bn45pvpstats:bn45pvpstats@localhost/bn45pvpstats"
@@ -101,15 +104,20 @@ async fn run_once(
 
             if let Err(err) = process_one(&args, &replay_path, db_pool).await {
                 log::error!("process one error for {}: {}", replay_path.display(), err);
+                std::fs::rename(
+                    &replay_path,
+                    args.rejected_replays_dir
+                        .join(replay_path.file_name().unwrap()),
+                )
+                .unwrap();
             } else {
                 log::info!("process one done for {}", replay_path.display());
+                std::fs::rename(
+                    &replay_path,
+                    args.done_replays_dir.join(replay_path.file_name().unwrap()),
+                )
+                .unwrap();
             }
-
-            std::fs::rename(
-                &replay_path,
-                args.done_replays_dir.join(replay_path.file_name().unwrap()),
-            )
-            .unwrap();
         })
     }))
     .await;
@@ -270,6 +278,7 @@ async fn main() -> anyhow::Result<()> {
 
     std::fs::create_dir_all(&args.hashed_replays_dir)?;
     std::fs::create_dir_all(&args.done_replays_dir)?;
+    std::fs::create_dir_all(&args.rejected_replays_dir)?;
 
     let db_pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(5)
