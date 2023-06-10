@@ -23,7 +23,10 @@ struct Args {
     #[clap(long, default_value = "done_replays")]
     done_replays_dir: std::path::PathBuf,
 
-    #[clap(long, default_value = "postgres://bn45pvpstats@/bn45pvpstats")]
+    #[clap(
+        long,
+        default_value = "postgres://bn45pvpstats:bn45pvpstats@localhost/bn45pvpstats"
+    )]
     db: String,
 }
 
