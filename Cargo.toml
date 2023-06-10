@@ -16,14 +16,16 @@ itertools = "0.10"
 log = "0.4"
 mgba = { path = "../tango/mgba" }
 prost = "0.10"
-rayon = "1.7"
 reqwest = { version = "0.11", features = ["stream", "json"] }
 routerify = "3.0"
 sha3 = "0.10"
+serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres", "time", "offline" ] }
 tango-dataview = { path = "../tango/tango-dataview" }
 tango-filesync = { path = "../tango/tango-filesync" }
 tango-gamedb = { path = "../tango/tango-gamedb" }
 tango-pvp = { path = "../tango/tango-pvp" }
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io"] }
+toml = "0.5"
 uuid = { version = "1.1", features = ["v4"] }

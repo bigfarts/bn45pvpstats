@@ -1,9 +1,18 @@
 use clap::Parser;
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use sha3::Digest;
 use tango_dataview::save::Save;
 
-#[derive(clap::Parser)]
+#[derive(serde::Deserialize, Debug)]
+struct PatchMetadata {
+    pub versions: std::collections::HashMap<String, VersionMetadata>,
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct VersionMetadata {
+    pub netplay_compatibility: String,
+}
+
+#[derive(clap::Parser, Clone)]
 struct Args {
     #[clap(long, default_value = "pending_replays")]
     pending_replays_dir: std::path::PathBuf,
@@ -13,6 +22,22 @@ struct Args {
 
     #[clap(long, default_value = "done_replays")]
     done_replays_dir: std::path::PathBuf,
+
+    #[clap(long, default_value = "postgres://bn45pvpstats@localhost/bn45pvpstats")]
+    db: String,
+}
+
+fn hash_replay(replay: &tango_pvp::replay::Replay) -> Vec<u8> {
+    let mut side_dependent_sha3 = sha3::Sha3_256::new();
+
+    for ip in replay.input_pairs.iter() {
+        side_dependent_sha3.update(
+            std::iter::zip(ip.local.packet.iter(), ip.remote.packet.iter())
+                .flat_map(|(x, y)| [*x, *y])
+                .collect::<Vec<_>>(),
+        );
+    }
+    side_dependent_sha3.finalize().to_vec()
 }
 
 async fn hash_and_move_one(
@@ -22,30 +47,27 @@ async fn hash_and_move_one(
     let hash = {
         let mut f = std::fs::File::open(replay_path)?;
         let replay = tango_pvp::replay::Replay::decode(&mut f)?;
-
-        let mut side_dependent_sha3 = sha3::Sha3_256::new();
-
-        for ip in replay.input_pairs.iter() {
-            side_dependent_sha3.update(
-                std::iter::zip(ip.local.packet.iter(), ip.remote.packet.iter())
-                    .flat_map(|(x, y)| [*x, *y])
-                    .collect::<Vec<_>>(),
-            );
-        }
-
-        hex::encode(side_dependent_sha3.finalize())
+        hex::encode(hash_replay(&replay))
     };
 
-    std::fs::rename(
-        replay_path,
-        args.hashed_replays_dir
-            .join(format!("{}.tangoreplay", hash)),
-    )?;
+    let new_replay_path = args
+        .hashed_replays_dir
+        .join(format!("{}.tangoreplay", hash));
+
+    log::info!(
+        "hash: {} -> {}",
+        replay_path.display(),
+        new_replay_path.display()
+    );
+    std::fs::rename(replay_path, new_replay_path)?;
 
     Ok(())
 }
 
-async fn run_once(args: &Args) -> Result<(), anyhow::Error> {
+async fn run_once(
+    args: &Args,
+    db_pool: sqlx::Pool<sqlx::postgres::Postgres>,
+) -> Result<(), anyhow::Error> {
     // Hash pending replays.
     for entry in std::fs::read_dir(&args.pending_replays_dir)?
         .into_iter()
@@ -68,20 +90,42 @@ async fn run_once(args: &Args) -> Result<(), anyhow::Error> {
         .filter(|entry| entry.path().extension() == Some(std::ffi::OsStr::new("tangoreplay")))
         .collect::<Vec<_>>();
 
-    hashed_replays.into_par_iter().for_each(|entry| {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .build()
+    futures_util::future::join_all(hashed_replays.into_iter().map(|entry| {
+        let args = args.clone();
+        let db_pool = db_pool.clone();
+        tokio::spawn(async move {
+            let replay_path = entry.path();
+
+            if let Err(err) = process_one(&args, &replay_path, db_pool).await {
+                log::error!("process one error for {}: {}", entry.path().display(), err);
+            }
+
+            log::info!("process: {} -> done", replay_path.display());
+            std::fs::rename(
+                &replay_path,
+                args.done_replays_dir.join(replay_path.file_name().unwrap()),
+            )
             .unwrap();
-        if let Err(err) = runtime.block_on(process_one(args, &entry.path())) {
-            log::error!("process one error for {}: {}", entry.path().display(), err);
-        }
-    });
+        })
+    }))
+    .await;
 
     Ok(())
 }
 
-async fn process_one(args: &Args, replay_path: &std::path::Path) -> Result<(), anyhow::Error> {
+async fn process_one(
+    _args: &Args,
+    replay_path: &std::path::Path,
+    db_pool: sqlx::Pool<sqlx::postgres::Postgres>,
+) -> Result<(), anyhow::Error> {
+    log::info!("processing {}", replay_path.display());
+
     let replay = tango_pvp::replay::Replay::decode(&mut std::fs::File::open(replay_path)?)?;
+    let hash = hash_replay(&replay);
+
+    let ts = sqlx::types::time::OffsetDateTime::from(
+        std::time::UNIX_EPOCH + std::time::Duration::from_millis(replay.metadata.ts),
+    );
 
     let game_info = replay
         .metadata
@@ -101,7 +145,7 @@ async fn process_one(args: &Args, replay_path: &std::path::Path) -> Result<(), a
     };
 
     let local_save = tango_dataview::game::exe45::save::Save::from_wram(replay.local_state.wram())?;
-    let (local_navi, local_chips) = {
+    let (local_navi, local_chips, local_regchip) = {
         let link_navi_view = match local_save.view_navi().unwrap() {
             tango_dataview::save::NaviView::LinkNavi(view) => view,
             _ => unreachable!(),
@@ -115,12 +159,13 @@ async fn process_one(args: &Args, replay_path: &std::path::Path) -> Result<(), a
                     (chip.id, chip.code)
                 })
                 .collect::<Vec<_>>(),
+            chips_view.regular_chip_index(0),
         )
     };
 
     let remote_save =
         tango_dataview::game::exe45::save::Save::from_wram(replay.remote_state.wram())?;
-    let (remote_navi, remote_chips) = {
+    let (remote_navi, remote_chips, remote_regchip) = {
         let link_navi_view = match remote_save.view_navi().unwrap() {
             tango_dataview::save::NaviView::LinkNavi(view) => view,
             _ => unreachable!(),
@@ -134,6 +179,7 @@ async fn process_one(args: &Args, replay_path: &std::path::Path) -> Result<(), a
                     (chip.id, chip.code)
                 })
                 .collect::<Vec<_>>(),
+            chips_view.regular_chip_index(0),
         )
     };
 
@@ -143,6 +189,15 @@ async fn process_one(args: &Args, replay_path: &std::path::Path) -> Result<(), a
         "patches/{}/v{}/BR4J_00.bps",
         patch_info.name, patch_info.version
     ))?;
+    let patch_metadata = toml::from_slice::<PatchMetadata>(&std::fs::read(&format!(
+        "patches/{}/info.toml",
+        patch_info.name
+    ))?)?;
+    let netplay_compatibility = patch_metadata
+        .versions
+        .get(&patch_info.version)
+        .map(|v| v.netplay_compatibility.clone())
+        .ok_or_else(|| anyhow::anyhow!("invalid version"))?;
     let patch = bps::Patch::decode(&patch)?;
 
     let rom = patch.apply(&rom)?;
@@ -157,12 +212,43 @@ async fn process_one(args: &Args, replay_path: &std::path::Path) -> Result<(), a
 
     let turns = state.wram()[0x00033018];
 
-    // TODO: Do stuff.
-
-    std::fs::rename(
-        replay_path,
-        args.done_replays_dir.join(replay_path.file_name().unwrap()),
-    )?;
+    let mut tx = db_pool.begin().await?;
+    sqlx::query!(
+        "
+        insert into rounds (hash, ts, turns, winner, loser, netplay_compatibility)
+        values ($1, $2, $3, $4, $5, $6)
+        ",
+        hash,
+        ts,
+        turns as i32,
+        local_navi as i32,
+        remote_navi as i32,
+        netplay_compatibility
+    )
+    .execute(&mut tx)
+    .await?;
+    for (is_winner, chips, regchip) in [
+        (true, local_chips, local_regchip),
+        (false, remote_chips, remote_regchip),
+    ] {
+        for (i, (chip_id, chip_code)) in chips.iter().enumerate() {
+            sqlx::query!(
+                "
+                insert into folder_chips (rounds_hash, is_winner, idx, chip_id, chip_code, is_regchip)
+                values ($1, $2, $3, $4, $5, $6)
+                ",
+                hash,
+                is_winner,
+                i as i32,
+                *chip_id as i32,
+                chip_code.to_string(),
+                regchip == Some(i),
+            )
+            .execute(&mut tx)
+            .await?;
+        }
+    }
+    tx.commit().await?;
 
     Ok(())
 }
@@ -179,8 +265,13 @@ async fn main() -> anyhow::Result<()> {
     std::fs::create_dir_all(&args.hashed_replays_dir)?;
     std::fs::create_dir_all(&args.done_replays_dir)?;
 
+    let db_pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&args.db)
+        .await?;
+
     loop {
-        if let Err(err) = run_once(&args).await {
+        if let Err(err) = run_once(&args, db_pool.clone()).await {
             log::error!("run error: {}", err);
         }
 

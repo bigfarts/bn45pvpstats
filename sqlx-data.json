@@ -1,0 +1,37 @@
+{
+  "db": "PostgreSQL",
+  "55dd9d35f21a3b7b42dc66b27cd59abaabbc8924b4bbe706f62ec0c94036f660": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Timestamptz",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        insert into rounds (hash, ts, turns, winner, loser, netplay_compatibility)\n        values ($1, $2, $3, $4, $5, $6)\n        "
+  },
+  "c1dbe15af47c0575d3dc6dd7048e3e25149811a42f8e65aa8e835b21f50e5a29": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bool",
+          "Int4",
+          "Int4",
+          "Bpchar",
+          "Bool"
+        ]
+      }
+    },
+    "query": "\n                insert into folder_chips (rounds_hash, is_winner, idx, chip_id, chip_code, is_regchip)\n                values ($1, $2, $3, $4, $5, $6)\n                "
+  }
+}
