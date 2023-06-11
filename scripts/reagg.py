@@ -1,10 +1,17 @@
 import os
 import datetime
 import json
+import argparse
 
-data_dir = "data"
+argparser = argparse.ArgumentParser()
+argparser.add_argument(
+    "--data-dir",
+    default="data",
+)
+args = argparser.parse_args()
 
-daily_data_dir = os.path.join(data_dir, "daily")
+
+daily_data_dir = os.path.join(args.data_dir, "1day")
 daily_data = {}
 
 
@@ -84,7 +91,7 @@ today = datetime.date.today()
 
 
 # do weekly aggregation
-weekly_data_dir = os.path.join(data_dir, "1week")
+weekly_data_dir = os.path.join(args.data_dir, "1week")
 try:
     os.makedirs(weekly_data_dir)
 except FileExistsError:
@@ -109,7 +116,7 @@ while d < get_monday(today) + datetime.timedelta(days=7):
     d += datetime.timedelta(days=7)
 
 # do monthly aggregation
-monthly_data_dir = os.path.join(data_dir, "1month")
+monthly_data_dir = os.path.join(args.data_dir, "1month")
 try:
     os.makedirs(monthly_data_dir)
 except FileExistsError:
@@ -135,7 +142,7 @@ while d < datetime.date(today.year, today.month + 1, 1):
     d = datetime.date(d.year, d.month + 1, 1)
 
 # do 3 monthly aggregation
-monthly3_data_dir = os.path.join(data_dir, "3month")
+monthly3_data_dir = os.path.join(args.data_dir, "3month")
 try:
     os.makedirs(monthly3_data_dir)
 except FileExistsError:
@@ -161,5 +168,5 @@ while d < datetime.date(today.year, today.month + 3, 1):
     d = datetime.date(d.year, d.month + 3, 1)
 
 # do all time aggregation
-with open(os.path.join(data_dir, f"alltime.json"), "w") as f:
+with open(os.path.join(args.data_dir, f"alltime.json"), "w") as f:
     json.dump(merge(list(daily_data.values())), f)

@@ -180,13 +180,14 @@ argparser.add_argument(
     default="postgres://bn45pvpstats@%2Fvar%2Frun%2Fpostgresql/bn45pvpstats",
 )
 argparser.add_argument(
-    "--out",
-    default="data/daily",
+    "--data-dir",
+    default="data",
 )
 args = argparser.parse_args()
 
+out = os.path.join(args.data_dir, "1day")
 try:
-    os.makedirs(args.out)
+    os.makedirs(out)
 except FileExistsError:
     pass
 
@@ -208,7 +209,7 @@ while d <= end:
             for navi in range(NUM_NAVIS)
         ]
 
-    with open(os.path.join(args.out, f"{d.strftime('%Y-%m-%d')}.json"), "w") as f:
+    with open(os.path.join(out, f"{d.strftime('%Y-%m-%d')}.json"), "w") as f:
         json.dump(
             {
                 "latest_ts": latest_ts.isoformat() if latest_ts is not None else None,
