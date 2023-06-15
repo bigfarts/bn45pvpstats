@@ -3,6 +3,7 @@ use futures::stream::TryStreamExt;
 use prost::Message;
 use routerify::ext::RequestExt;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio_util::compat::FuturesAsyncReadCompatExt;
 
 #[derive(clap::Parser)]
 struct Args {
@@ -33,12 +34,11 @@ async fn handle_submit_request(
         state.pending_replays_dir.clone()
     };
 
-    let mut reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(
-        TryStreamExt::map_err(request.into_body(), |e| {
-            std::io::Error::new(std::io::ErrorKind::Other, e)
-        })
-        .into_async_read(),
-    );
+    let mut reader = request
+        .into_body()
+        .map_err(|e| futures::io::Error::new(futures::io::ErrorKind::Other, e))
+        .into_async_read()
+        .compat();
 
     let mut header = [0u8; 4];
     reader.read_exact(&mut header).await?;
@@ -47,10 +47,10 @@ async fn handle_submit_request(
     if &header != tango_pvp::replay::HEADER {
         return Ok(hyper::Response::builder()
             .status(hyper::http::StatusCode::BAD_REQUEST)
-            .body("invalid header".into())?);
+            .body(format!("invalid header: {:02x?}", header).into())?);
     }
 
-    // Read the version: if the version mismatches, it's innocuous.
+    // Read the version.
     let version = reader.read_u8().await?;
     if version != tango_pvp::replay::VERSION {
         return Ok(hyper::Response::builder()
@@ -65,7 +65,6 @@ async fn handle_submit_request(
             .status(hyper::http::StatusCode::BAD_REQUEST)
             .body("not complete".into())?);
     }
-    log::info!("read num inputs: {}", num_inputs);
 
     // Read the metadata.
     let metadata_len = reader.read_u32_le().await? as usize;
@@ -78,7 +77,7 @@ async fn handle_submit_request(
     let mut metadata_buf = vec![0u8; metadata_len];
     reader.read_exact(&mut metadata_buf).await?;
 
-    let (_, mut metadata) = tango_pvp::replay::read_metadata(&mut &metadata_buf[..])
+    let mut metadata = tango_pvp::replay::decode_metadata(version, &mut &metadata_buf[..])
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
     if let Some(side) = metadata.local_side.as_mut() {
