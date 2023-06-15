@@ -71,7 +71,10 @@ async fn handle_submit_request(
     // Read the metadata.
     let metadata_len = reader.read_u32_le().await? as usize;
     if metadata_len == 0 || metadata_len > MAX_METADATA_LEN {
-        log::warn!("failed to accept replay: metadata invalid");
+        log::warn!(
+            "failed to accept replay: metadata invalid, got length {}",
+            metadata_len
+        );
         return Ok(hyper::Response::builder()
             .status(hyper::http::StatusCode::BAD_REQUEST)
             .body(hyper::Body::empty())?);
