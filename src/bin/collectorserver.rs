@@ -45,41 +45,34 @@ async fn handle_submit_request(
 
     // Read the header.
     if &header != tango_pvp::replay::HEADER {
-        log::warn!("failed to accept replay: invalid header {:02x?}", header);
         return Ok(hyper::Response::builder()
             .status(hyper::http::StatusCode::BAD_REQUEST)
-            .body(hyper::Body::empty())?);
+            .body("invalid header".into())?);
     }
 
     // Read the version: if the version mismatches, it's innocuous.
     let version = reader.read_u8().await?;
     if version != tango_pvp::replay::VERSION {
-        log::warn!(
-            "failed to accept replay: version {:02x} not supported",
-            version
-        );
-        return Ok(hyper::Response::builder().body(hyper::Body::empty())?);
+        return Ok(hyper::Response::builder()
+            .status(hyper::http::StatusCode::BAD_REQUEST)
+            .body(format!("unsupported version: {:02x}", version).into())?);
     }
 
     // Read the number of inputs: 0 is incomplete.
     let num_inputs = reader.read_u32_le().await?;
     if num_inputs == 0 {
-        log::warn!("failed to accept replay: is incomplete");
         return Ok(hyper::Response::builder()
             .status(hyper::http::StatusCode::BAD_REQUEST)
-            .body(hyper::Body::empty())?);
+            .body("not complete".into())?);
     }
+    log::info!("read num inputs: {}", num_inputs);
 
     // Read the metadata.
     let metadata_len = reader.read_u32_le().await? as usize;
     if metadata_len == 0 || metadata_len > MAX_METADATA_LEN {
-        log::warn!(
-            "failed to accept replay: metadata invalid, got length {}",
-            metadata_len
-        );
         return Ok(hyper::Response::builder()
             .status(hyper::http::StatusCode::BAD_REQUEST)
-            .body(hyper::Body::empty())?);
+            .body(format!("metadata too long: {}", metadata_len).into())?);
     }
 
     let mut metadata_buf = vec![0u8; metadata_len];
