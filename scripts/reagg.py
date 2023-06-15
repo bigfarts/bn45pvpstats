@@ -1,4 +1,5 @@
 import os
+import shutil
 import datetime
 import json
 import argparse
@@ -168,5 +169,17 @@ while d < datetime.date(today.year, today.month + 3, 1):
     d = datetime.date(d.year, d.month + 3, 1)
 
 # do all time aggregation
-with open(os.path.join(args.data_dir, f"alltime.json"), "w") as f:
+alltime_data_dir = os.path.join(args.data_dir, "alltime")
+try:
+    shutil.rmtree(alltime_data_dir)
+except FileNotFoundError:
+    pass
+os.makedirs(alltime_data_dir)
+
+latest = max(daily_data)
+
+with open(
+    os.path.join(args.data_dir, f"alltime", f"{latest.isoformat()}.json"),
+    "w",
+) as f:
     json.dump(merge(list(daily_data.values())), f)
