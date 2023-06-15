@@ -33,10 +33,12 @@ async fn handle_submit_request(
         state.pending_replays_dir.clone()
     };
 
-    let mut reader =
-        tokio_util::io::StreamReader::new(TryStreamExt::map_err(request.into_body(), |e| {
+    let mut reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(
+        TryStreamExt::map_err(request.into_body(), |e| {
             std::io::Error::new(std::io::ErrorKind::Other, e)
-        }));
+        })
+        .into_async_read(),
+    );
 
     let mut header = [0u8; 4];
     reader.read_exact(&mut header).await?;
