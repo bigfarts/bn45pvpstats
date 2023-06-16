@@ -34,31 +34,30 @@ struct Args {
 }
 
 fn hash_replay(replay: &tango_pvp::replay::Replay) -> Vec<u8> {
-    let mut side_dependent_sha3 = sha3::Sha3_256::new();
-
+    let mut hasher = sha3::Sha3_256::new();
     for ip in replay.input_pairs.iter() {
-        side_dependent_sha3.update(
+        hasher.update(
             std::iter::zip(ip.local.packet.iter(), ip.remote.packet.iter())
-                .flat_map(|(x, y)| [*x, *y])
+                .map(|(x, y)| *x ^ *y)
                 .collect::<Vec<_>>(),
         );
     }
-    side_dependent_sha3.finalize().to_vec()
+    hasher.finalize().to_vec()
 }
 
 async fn hash_and_move_one(
     args: &Args,
     replay_path: &std::path::Path,
 ) -> Result<(), anyhow::Error> {
-    let hash = {
+    let (hash, local_player_index) = {
         let mut f = std::fs::File::open(replay_path)?;
         let replay = tango_pvp::replay::Replay::decode(&mut f)?;
-        hex::encode(hash_replay(&replay))
+        (hex::encode(hash_replay(&replay)), replay.local_player_index)
     };
 
-    let new_replay_path = args
-        .hashed_replays_dir
-        .join(format!("{}.tangoreplay", hash));
+    let new_replay_path =
+        args.hashed_replays_dir
+            .join(format!("{}-p{}.tangoreplay", hash, local_player_index + 1));
 
     log::info!(
         "hash: {} -> {}",
@@ -332,7 +331,6 @@ async fn main() -> anyhow::Result<()> {
         }
 
         const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_secs(5);
-        log::info!("sleeping for {:?}", SLEEP_DURATION);
         tokio::time::sleep(SLEEP_DURATION).await;
     }
 }
