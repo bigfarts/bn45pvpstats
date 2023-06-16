@@ -20,7 +20,7 @@ def get_chips_ranking(winning_chips, picks):
 <div class="d-flex flex-grow-1 flex-shrink-1 flex-column" style="min-width: 0">
     <h2 class="mx-1 my-2 fs-5">${LOCALE["common"]["facets"]["picks-and-wins"]}</h2>
     <ul class="nav nav-tabs flex-shrink-0">
-    % for name in ["1week", "1month", "3month", "alltime"]:
+    % for name in ["alltime", "3month", "1month", "1week"]:
         <li class="nav-item">
             <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/navis/${NAVIS[current_navi]}/${name}">${LOCALE["common"]["agg_periods"][name]}</a>
         </li>
@@ -101,7 +101,7 @@ def get_chips_ranking(winning_chips, picks):
 
     <h2 class="mx-1 my-2 fs-5">${LOCALE["common"]["facets"]["chip-usage"]}</h2>
     <ul class="nav nav-tabs flex-shrink-0">
-        % for name in ["1week", "1month", "3month", "alltime"]:
+        % for name in ["alltime", "3month", "1month", "1week"]:
             <li class="nav-item">
                 <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/navis/${NAVIS[current_navi]}/${name}">${LOCALE["common"]["agg_periods"][name]}</a>
             </li>

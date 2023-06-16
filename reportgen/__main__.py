@@ -137,4 +137,4 @@ for lang in ["en", "ja"]:
                 LOCALE=locale,
             )
 
-    copy_file(f"{lang}/summary/1week/index.html", f"{lang}/index.html")
+    copy_file(f"{lang}/summary/alltime/index.html", f"{lang}/index.html")

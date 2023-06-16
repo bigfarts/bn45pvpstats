@@ -32,7 +32,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
 
 <div class="d-flex flex-grow-1 flex-shrink-1 flex-column" style="min-width: 0">
     <ul class="nav nav-tabs flex-shrink-0">
-    % for name in ["1week", "1month", "3month", "alltime"]:
+    % for name in ["alltime", "3month", "1month", "1week"]:
         <li class="nav-item">
             <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/summary/${name}">${LOCALE["common"]["agg_periods"][name]}</a>
         </li>
