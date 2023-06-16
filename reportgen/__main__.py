@@ -9,8 +9,6 @@ from mako.lookup import TemplateLookup
 data_dir = "data"
 out_dir = "report"
 
-shutil.rmtree(out_dir)
-
 aggregated_data = {}
 
 for agg_period in ["1week", "1month", "3month", "alltime"]:
