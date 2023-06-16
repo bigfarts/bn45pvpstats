@@ -104,7 +104,7 @@ def get_turns_to_win(conn, agg_period, netplay_compatibility, on):
     return turns_to_win
 
 
-def get_winning_chips(conn, agg_period, netplay_compatibility, on, navi):
+def get_chips(conn, agg_period, netplay_compatibility, on, navi):
     cur = conn.cursor()
     cur.execute(
         """
@@ -213,7 +213,7 @@ while d <= end:
         picks = get_picks(conn, agg_period, netplay_compatibility, d)
         turns_to_win = get_turns_to_win(conn, agg_period, netplay_compatibility, d)
         chips = [
-            get_winning_chips(conn, agg_period, netplay_compatibility, d, navi)
+            get_chips(conn, agg_period, netplay_compatibility, d, navi)
             for navi in range(NUM_NAVIS)
         ]
 
