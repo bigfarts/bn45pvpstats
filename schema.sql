@@ -21,4 +21,4 @@ create index on rounds(winner, netplay_compatibility);
 create index on rounds(loser, netplay_compatibility);
 create index on rounds(ts, netplay_compatibility);
 create index on rounds(netplay_compatibility);
-create index on folder_chips(chip_id, chip_code);
+create index on folder_chips(rounds_hash, chip_id, is_winner);

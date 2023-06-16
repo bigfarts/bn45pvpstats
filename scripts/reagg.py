@@ -43,22 +43,13 @@ def merge_turns_to_win(vs):
     return [[cell for row in rows for cell in row] for rows in zip(*vs)]
 
 
-def merge_winning_chips_by_navi(vs):
+def merge_chips(vs):
     def _merge_row(row):
-        tot = None
-
+        tot = [0, 0]
         for col in row:
-            if col is None:
-                continue
-
-            if tot is None:
-                tot = col
-                continue
-
             wins1, losses1 = tot
             wins2, losses2 = col
-
-            return [wins1 + wins2, losses1 + losses2]
+            tot = [wins1 + wins2, losses1 + losses2]
         return tot
 
     return [[_merge_row(row) for row in zip(*rows)] for rows in zip(*vs)]
@@ -72,9 +63,7 @@ def merge(ds):
         "turns_to_win": merge_turns_to_win(
             d["turns_to_win"] for d in ds if d is not None
         ),
-        "winning_chips_by_navi": merge_winning_chips_by_navi(
-            d["winning_chips_by_navi"] for d in ds if d is not None
-        ),
+        "chips": merge_chips(d["chips"] for d in ds if d is not None),
     }
 
 

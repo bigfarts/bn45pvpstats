@@ -117,7 +117,7 @@ def get_chips_ranking(winning_chips, picks):
                 chips_t = [
                     vs
                     for vs in itertools.zip_longest(
-                        *(get_chips_ranking(tab["winning_chips_by_navi"][current_navi], tab["picks"][current_navi]) for _, tab in data if tab["picks"]),
+                        *(get_chips_ranking(tab["chips"][current_navi], tab["picks"][current_navi]) for _, tab in data if tab["picks"]),
                         fillvalue=None,
                     )
                 ]

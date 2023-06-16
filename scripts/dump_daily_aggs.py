@@ -52,7 +52,6 @@ def get_picks(conn, agg_period, netplay_compatibility, on):
         with
             picks as (
                 select
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date period,
                     unnest(array[winner, loser]) navi,
                     count(*) n
                 from rounds
@@ -60,7 +59,7 @@ def get_picks(conn, agg_period, netplay_compatibility, on):
                     netplay_compatibility = %s and
                     date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
                     winner != loser
-                group by period, navi
+                group by navi
             )
         select
             picks.navi navi,
@@ -68,7 +67,7 @@ def get_picks(conn, agg_period, netplay_compatibility, on):
         from picks
         order by navi
         """,
-        (agg_period, netplay_compatibility, agg_period, on),
+        (netplay_compatibility, agg_period, on),
     )
     pickrates = [0] * NUM_NAVIS
     for navi, picks in cur:
@@ -83,7 +82,6 @@ def get_turns_to_win(conn, agg_period, netplay_compatibility, on):
         with
             turns as (
                 select
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date period,
                     winner navi,
                     array_agg(turns) t
                 from rounds
@@ -91,14 +89,14 @@ def get_turns_to_win(conn, agg_period, netplay_compatibility, on):
                     netplay_compatibility = %s and
                     date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
                     winner != loser
-                group by period, navi
+                group by navi
             )
         select
             navi, t
         from turns
         order by navi
         """,
-        (agg_period, netplay_compatibility, agg_period, on),
+        (netplay_compatibility, agg_period, on),
     )
     turns_to_win = [[] for _ in range(NUM_NAVIS)]
     for navi, t in cur:
@@ -111,71 +109,54 @@ def get_winning_chips(conn, agg_period, netplay_compatibility, on, navi):
     cur.execute(
         """
         with
-            agg_rounds as (
+            selected_rounds as (
                 select
                     hash,
-                    ts,
                     winner,
                     loser
                 from rounds
                 where
                     netplay_compatibility = %s and
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s
+                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
+                    %s = any(array[rounds.winner, rounds.loser]) and
+                    winner != loser
             )
         select
-            chip_id, wins, losses
-        from
-        (
-            select
-                date_bin(%s, ts, timestamptz '2001-01-01')::date period,
-                winner navi,
-                chip_id,
-                (
-                    select
-                        count(*)
-                    from agg_rounds r1
-                    where
-                        winner = r2.winner and
-                        winner != loser and
-                        exists (
-                            select *
-                            from folder_chips
-                            where
-                                rounds_hash = r1.hash and
-                                chip_id = fc2.chip_id
-                            )
-                ) wins,
-                (
-                    select
-                        count(*)
-                    from agg_rounds r1
-                    where
-                        loser = r2.winner and
-                        winner != loser and
-                        exists (
-                            select *
-                            from folder_chips
-                            where
-                                rounds_hash = r1.hash and
-                                chip_id = fc2.chip_id
-                            )
-                ) losses
-            from agg_rounds r2
-            inner join
-                folder_chips fc2 on
-                r2.hash = fc2.rounds_hash
-            group by period, navi, chip_id
-        ) t
-        where navi = %s
-        order by chip_id
+            chip_id,
+            (
+                select
+                    count(*)
+                from selected_rounds
+                where
+                    exists (
+                        select *
+                        from folder_chips fc2
+                        where
+                            fc2.rounds_hash = selected_rounds.hash and
+                            fc2.chip_id = fc1.chip_id and
+                            fc2.is_winner
+                        ) and
+                    winner = %s
+            ) wins,
+            (
+                select
+                    count(*)
+                from selected_rounds
+                where
+                    exists (
+                        select *
+                        from folder_chips fc2
+                        where
+                            fc2.rounds_hash = selected_rounds.hash and
+                            fc2.chip_id = fc1.chip_id and
+                            not fc2.is_winner
+                        ) and
+                    loser = %s
+            ) losses
+        from folder_chips fc1
+        group by chip_id
         """,
-        (
-            netplay_compatibility,
-            agg_period,
-            on,
-            agg_period,
-            navi,
-        ),
+        (netplay_compatibility, agg_period, on, navi, navi, navi),
     )
     winning_chips = [[0, 0] for _ in range(NUM_CHIPS)]
     for chip_id, wins, losses in cur:
@@ -231,7 +212,7 @@ while d <= end:
         wins = get_wins(conn, agg_period, netplay_compatibility, d)
         picks = get_picks(conn, agg_period, netplay_compatibility, d)
         turns_to_win = get_turns_to_win(conn, agg_period, netplay_compatibility, d)
-        winning_chips_by_navi = [
+        chips = [
             get_winning_chips(conn, agg_period, netplay_compatibility, d, navi)
             for navi in range(NUM_NAVIS)
         ]
@@ -243,7 +224,7 @@ while d <= end:
                 "wins": wins,
                 "picks": picks,
                 "turns_to_win": turns_to_win,
-                "winning_chips_by_navi": winning_chips_by_navi,
+                "chips": chips,
             },
             f,
         )
