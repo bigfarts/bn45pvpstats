@@ -77,6 +77,9 @@ fn main() -> Result<(), anyhow::Error> {
         let icon = us_assets.chip(i).unwrap().icon();
         let icon = image::imageops::crop_imm(&icon, 1, 1, 14, 14).to_image();
         icon.save(format!("reportgen/images/chips/{}.png", i))?;
+
+        let img = us_assets.chip(i).unwrap().image();
+        img.save(format!("reportgen/images/chips/{}_full.png", i))?;
     }
 
     Ok(())

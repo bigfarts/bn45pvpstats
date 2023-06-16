@@ -1,6 +1,7 @@
 import os
 import shutil
 import datetime
+import dateutil.relativedelta
 import json
 import argparse
 
@@ -104,21 +105,19 @@ except FileExistsError:
     pass
 
 d = get_monday(min(daily_data.keys()))
-while d < get_monday(today) + datetime.timedelta(days=7):
+while d <= get_monday(today) + datetime.timedelta(days=7):
+    merged = merge(
+        [
+            daily_data.get(t)
+            for t in date_range(
+                d - datetime.timedelta(days=7),
+                d,
+                datetime.timedelta(days=1),
+            )
+        ]
+    )
     with open(os.path.join(weekly_data_dir, f"{d.isoformat()}.json"), "w") as f:
-        json.dump(
-            merge(
-                [
-                    daily_data.get(t)
-                    for t in date_range(
-                        d,
-                        d + datetime.timedelta(days=7),
-                        datetime.timedelta(days=1),
-                    )
-                ]
-            ),
-            f,
-        )
+        json.dump(merged, f)
     d += datetime.timedelta(days=7)
 
 # do monthly aggregation
@@ -130,22 +129,20 @@ except FileExistsError:
 
 d = min(daily_data.keys())
 d = datetime.date(d.year, d.month, 1)
-while d < datetime.date(today.year, today.month + 1, 1):
+while d <= datetime.date(today.year, today.month + 1, 1):
+    merged = merge(
+        [
+            daily_data.get(t)
+            for t in date_range(
+                d - dateutil.relativedelta.relativedelta(months=1),
+                d,
+                datetime.timedelta(days=1),
+            )
+        ]
+    )
     with open(os.path.join(monthly_data_dir, f"{d.isoformat()}.json"), "w") as f:
-        json.dump(
-            merge(
-                [
-                    daily_data.get(t)
-                    for t in date_range(
-                        d,
-                        datetime.date(d.year, d.month + 1, 1),
-                        datetime.timedelta(days=1),
-                    )
-                ]
-            ),
-            f,
-        )
-    d = datetime.date(d.year, d.month + 1, 1)
+        json.dump(merged, f)
+    d += dateutil.relativedelta.relativedelta(months=1)
 
 # do 3 monthly aggregation
 monthly3_data_dir = os.path.join(args.data_dir, "3month")
@@ -156,22 +153,20 @@ except FileExistsError:
 
 d = min(daily_data.keys())
 d = datetime.date(d.year, (d.month - 1) // 3 * 3 + 1, 1)
-while d < datetime.date(today.year, today.month + 3, 1):
+while d <= datetime.date(today.year, today.month + 3, 1):
+    merged = merge(
+        [
+            daily_data.get(t)
+            for t in date_range(
+                d - dateutil.relativedelta.relativedelta(months=3),
+                d,
+                datetime.timedelta(days=1),
+            )
+        ]
+    )
     with open(os.path.join(monthly3_data_dir, f"{d.isoformat()}.json"), "w") as f:
-        json.dump(
-            merge(
-                [
-                    daily_data.get(t)
-                    for t in date_range(
-                        d,
-                        datetime.date(d.year, d.month + 3, 1),
-                        datetime.timedelta(days=1),
-                    )
-                ]
-            ),
-            f,
-        )
-    d = datetime.date(d.year, d.month + 3, 1)
+        json.dump(merged, f)
+    d += dateutil.relativedelta.relativedelta(months=3)
 
 # do all time aggregation
 alltime_data_dir = os.path.join(args.data_dir, "alltime")

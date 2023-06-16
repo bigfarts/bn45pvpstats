@@ -36,7 +36,7 @@ def get_chips_ranking(winning_chips, picks):
                 </tr>
                 <tr>
                     % for _, _ in data:
-                    <th style="width: 44.5px"></th>
+                    <th style="width: 72.5px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["wins"]}</th>
                     % endfor
@@ -106,7 +106,7 @@ def get_chips_ranking(winning_chips, picks):
                 </tr>
                 <tr>
                     % for _, _ in data:
-                    <th style="width: 44.5px"></th>
+                    <th style="width: 72.5px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["wins"]}</th>
                     % endfor
@@ -114,15 +114,12 @@ def get_chips_ranking(winning_chips, picks):
             </thead>
             <tbody>
                 <%
-                chips_t = [
-                    vs
-                    for vs in itertools.zip_longest(
-                        *(get_chips_ranking(tab["chips"][current_navi], tab["picks"][current_navi] if tab["picks"] else 0) for _, tab in data),
-                        fillvalue=None,
-                    )
-                ]
+                chips_t = list(itertools.zip_longest(
+                    *(get_chips_ranking(tab["chips"][current_navi], tab["picks"][current_navi] if tab["picks"] else 0) for _, tab in data),
+                    fillvalue=None,
+                ))
                 %>
-                % for row in chips_t:
+                % for row in itertools.takewhile(lambda row: any(cols[2] != 0 for cols in row), chips_t):
                 <tr>
                     % for chip_id, wins, total, picks, max_picks in row:
                     % if total != 0:
@@ -138,7 +135,7 @@ def get_chips_ranking(winning_chips, picks):
                     %>
                     <td>
                         <span title="${LOCALE["chips"]["names"][chip_id]}" data-bs-toggle="tooltip" data-bs-placement="right">
-                            <img src="/images/chips/${chip_id}.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" width="28" height="28">
+                            <img src="/images/chips/${chip_id}_full.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" width="56" height="48">
                         </span>
                     </td>
                     <td class="align-middle">
