@@ -3,3 +3,6 @@
 exe45.gba
 *.tangoreplay
 /data
+/report
+__pycache__
+/.vscode

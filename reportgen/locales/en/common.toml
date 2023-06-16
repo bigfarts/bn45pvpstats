@@ -1,0 +1,42 @@
+title = "BN4.5 PvP Stats"
+no-data = "no data"
+
+navis = [
+    "MegaMan",
+    "Roll",
+    "GutsMan",
+    "WindMan",
+    "SearchMan",
+    "FireMan",
+    "ThunderMan",
+    "ProtoMan",
+    "NumberMan",
+    "MetalMan",
+    "JunkMan",
+    "AquaMan",
+    "WoodMan",
+    "",
+    "",
+    "StarMan",
+    "ShadowMan",
+    "KnightMan",
+    "NapalmMan",
+    "IceMan",
+    "ElecMan",
+    "PlantMan",
+    "Bass"
+]
+
+[agg_periods]
+"1week" = "1 week"
+"1month" = "1 month"
+"3month" = "3 months"
+alltime = "all time"
+
+[stats]
+picks = "picks"
+wins = "wins"
+
+[facets]
+picks-and-wins = "Picks and wins"
+chip-usage = "Chip usage"

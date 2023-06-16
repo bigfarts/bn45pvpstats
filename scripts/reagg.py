@@ -55,10 +55,10 @@ def merge_winning_chips_by_navi(vs):
                 tot = col
                 continue
 
-            n1, wins1, total1 = tot
-            n2, wins2, total2 = col
+            wins1, losses1 = tot
+            wins2, losses2 = col
 
-            return [n1 + n2, wins1 + wins2, total1 + total2]
+            return [wins1 + wins2, losses1 + losses2]
         return tot
 
     return [[_merge_row(row) for row in zip(*rows)] for rows in zip(*vs)]

@@ -32,7 +32,8 @@ def get_wins(conn, agg_period, netplay_compatibility, on):
         from rounds
         where
             netplay_compatibility = %s and
-            date_bin(%s, ts, timestamptz '2001-01-01')::date = %s
+            date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
+            winner != loser
         group by winner, loser
         order by winner, loser
         """,
@@ -57,7 +58,8 @@ def get_picks(conn, agg_period, netplay_compatibility, on):
                 from rounds
                 where
                     netplay_compatibility = %s and
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s
+                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
+                    winner != loser
                 group by period, navi
             )
         select
@@ -87,7 +89,8 @@ def get_turns_to_win(conn, agg_period, netplay_compatibility, on):
                 from rounds
                 where
                     netplay_compatibility = %s and
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s
+                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
+                    winner != loser
                 group by period, navi
             )
         select
@@ -107,52 +110,76 @@ def get_winning_chips(conn, agg_period, netplay_compatibility, on, navi):
     cur = conn.cursor()
     cur.execute(
         """
+        with
+            agg_rounds as (
+                select
+                    hash,
+                    ts,
+                    winner,
+                    loser
+                from rounds
+                where
+                    netplay_compatibility = %s and
+                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s
+            )
         select
-            chip_id, n, wins, total
+            chip_id, wins, losses
         from
         (
             select
                 date_bin(%s, ts, timestamptz '2001-01-01')::date period,
                 winner navi,
                 chip_id,
-                count(*) n,
                 (
                     select
                         count(*)
-                    from rounds r1
-                    inner join folder_chips fc1 on
-                        rounds_hash = r1.hash and
-                        chip_id = folder_chips.chip_id
+                    from agg_rounds r1
                     where
-                        winner = rounds.winner
+                        winner = r2.winner and
+                        winner != loser and
+                        exists (
+                            select *
+                            from folder_chips
+                            where
+                                rounds_hash = r1.hash and
+                                chip_id = fc2.chip_id
+                            )
                 ) wins,
                 (
                     select
                         count(*)
-                    from rounds r1
-                    inner join folder_chips fc1 on
-                        rounds_hash = r1.hash and
-                        chip_id = folder_chips.chip_id
+                    from agg_rounds r1
                     where
-                        loser = rounds.winner or
-                        winner = rounds.winner
-                ) total
-            from rounds
+                        loser = r2.winner and
+                        winner != loser and
+                        exists (
+                            select *
+                            from folder_chips
+                            where
+                                rounds_hash = r1.hash and
+                                chip_id = fc2.chip_id
+                            )
+                ) losses
+            from agg_rounds r2
             inner join
-                folder_chips on rounds.hash = folder_chips.rounds_hash
-            where
-                netplay_compatibility = %s and
-                date_bin(%s, ts, timestamptz '2001-01-01')::date = %s
+                folder_chips fc2 on
+                r2.hash = fc2.rounds_hash
             group by period, navi, chip_id
         ) t
         where navi = %s
         order by chip_id
         """,
-        (agg_period, netplay_compatibility, agg_period, on, navi),
+        (
+            netplay_compatibility,
+            agg_period,
+            on,
+            agg_period,
+            navi,
+        ),
     )
-    winning_chips = [None] * NUM_CHIPS
-    for chip_id, n, wins, total in cur:
-        winning_chips[chip_id] = (n, wins, total)
+    winning_chips = [[0, 0] for _ in range(NUM_CHIPS)]
+    for chip_id, wins, losses in cur:
+        winning_chips[chip_id] = (wins, losses)
     return winning_chips
 
 
