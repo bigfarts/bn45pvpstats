@@ -85,8 +85,8 @@ NAVIS = [
 ]
 
 try:
-    os.removedirs(os.path.join(out_dir, "images"))
-except FileExistsError:
+    shutil.rmtree(os.path.join(out_dir, "images"))
+except FileNotFoundError:
     pass
 
 shutil.copytree(
