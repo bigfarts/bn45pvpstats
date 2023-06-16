@@ -84,6 +84,11 @@ NAVIS = [
     "bass",
 ]
 
+try:
+    os.removedirs(os.path.join(out_dir, "images"))
+except FileExistsError:
+    pass
+
 shutil.copytree(
     os.path.join(os.path.dirname(__file__), "images"),
     os.path.join(out_dir, "images"),
