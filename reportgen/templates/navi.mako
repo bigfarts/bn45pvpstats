@@ -3,7 +3,8 @@
 <%
 import json
 import itertools
-from palettable.cartocolors.sequential import TealGrn_7, RedOr_7
+import statistics
+from palettable.cartocolors.sequential import TealGrn_7, RedOr_7, PurpOr_7
 %>
 
 <%
@@ -31,14 +32,15 @@ def get_chips_ranking(winning_chips, picks):
             <thead class="sticky-top">
                 <tr>
                     % for date, _ in data:
-                    <th colspan="3" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
+                    <th colspan="4" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
                     % endfor
                 </tr>
                 <tr>
                     % for _, _ in data:
                     <th style="width: 72.5px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
-                    <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["wins"]}</th>
+                    <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
+                    <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
                     % endfor
                 </tr>
             </thead>
@@ -48,6 +50,7 @@ def get_chips_ranking(winning_chips, picks):
                     <%
                         wins = sum(tab["wins"][current_navi]) if tab["wins"] else 0
                         picks = tab["picks"][current_navi] if tab["picks"] else 0
+                        median_turns_to_win = statistics.median(tab["turns_to_win"][current_navi]) if tab["turns_to_win"][current_navi] else 0
 
                         losses = sum(tab["wins"][i][current_navi] for i in range(len(NAVIS))) if tab["wins"] else 0
                         total = wins + losses
@@ -59,26 +62,34 @@ def get_chips_ranking(winning_chips, picks):
 
                         rel_winrate = winrate
                         rel_pickrate = picks / max_picks if max_picks != 0 else 0
+                        rel_median_turns_to_win = median_turns_to_win / 15.0
 
                         win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
-                        pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
+                        pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))]
+                        median_turns_to_win_color = PurpOr_7.colors[round(rel_median_turns_to_win * (len(PurpOr_7.colors) - 1))]
                     %>
                     % if total != 0:
                     <td></td>
                     <td class="align-middle">
                         <div><small>${picks}/${total_picks} (${f'{pickrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
+                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
                         </div>
                     </td>
-                    <td class="align-middle border-end">
+                    <td class="align-middle">
                         <div><small>${wins}/${total} (${f'{winrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
                             <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
                         </div>
                     </td>
+                    <td class="align-middle border-end">
+                        <div><small>${f'{median_turns_to_win:.0f}'}</small></div>
+                        <div style="width: 100%; height: 5px">
+                            <div style="background-color: ${f"rgb({median_turns_to_win_color[0]}, {median_turns_to_win_color[1]}, {median_turns_to_win_color[2]})"}; width: ${rel_median_turns_to_win * 100}%; height: 100%"></div>
+                        </div>
+                    </td>
                     % else:
-                    <td class="text-center align-middle${" table-secondary" if picks == 0 else ""}" colspan="3">
+                    <td class="text-center align-middle${" table-secondary" if picks == 0 else ""}" colspan="4">
                         ${LOCALE["common"]["no-data"]}
                     </td>
                     % endif
@@ -101,14 +112,15 @@ def get_chips_ranking(winning_chips, picks):
             <thead class="sticky-top">
                 <tr>
                     % for date, _ in data:
-                    <th colspan="3" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
+                    <th colspan="4" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
                     % endfor
                 </tr>
                 <tr>
                     % for _, _ in data:
                     <th style="width: 72.5px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
-                    <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["wins"]}</th>
+                    <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
+                    <th style="width: 150px" class="border-end"></th>
                     % endfor
                 </tr>
             </thead>
@@ -144,14 +156,15 @@ def get_chips_ranking(winning_chips, picks):
                             <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
                         </div>
                     </td>
-                    <td class="align-middle border-end">
+                    <td class="align-middle">
                         <div><small>${wins}/${total} (${f'{winrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
                             <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
                         </div>
                     </td>
+                    <td class="border-end"></td>
                     % else:
-                    <td class="border-end" colspan="3"></td>
+                    <td class="border-end${" table-secondary" if total == 0 else ""}" colspan="4"></td>
                     % endif
                     % endfor
                 </tr>

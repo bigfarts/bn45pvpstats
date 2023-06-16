@@ -36,6 +36,7 @@ alltime = "all time"
 [stats]
 picks = "picks"
 wins = "wins"
+turns-to-win = "med win turns"
 
 [facets]
 picks-and-wins = "Picks and wins"

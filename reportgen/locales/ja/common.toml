@@ -36,6 +36,7 @@ alltime = "全ての時間"
 [stats]
 picks = "選択"
 wins = "勝利"
+turns-to-win = "勝利ターン中央値"
 
 [facets]
 picks-and-wins = "選択と勝利"
