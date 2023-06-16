@@ -117,7 +117,7 @@ def get_chips_ranking(winning_chips, picks):
                 chips_t = [
                     vs
                     for vs in itertools.zip_longest(
-                        *(get_chips_ranking(tab["chips"][current_navi], tab["picks"][current_navi]) for _, tab in data if tab["picks"]),
+                        *(get_chips_ranking(tab["chips"][current_navi], tab["picks"][current_navi] if tab["picks"] else 0) for _, tab in data),
                         fillvalue=None,
                     )
                 ]
@@ -125,9 +125,10 @@ def get_chips_ranking(winning_chips, picks):
                 % for row in chips_t:
                 <tr>
                     % for chip_id, wins, total, picks, max_picks in row:
+                    % if total != 0:
                     <%
-                        winrate = wins / total if total != 0 else 0
-                        pickrate = total / picks if picks != 0 else 0
+                        winrate = wins / total
+                        pickrate = total / picks
 
                         rel_winrate = winrate
                         rel_pickrate = total / max_picks if max_picks != 0 else 0
@@ -135,7 +136,6 @@ def get_chips_ranking(winning_chips, picks):
                         win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
                         pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
                     %>
-                    % if total != 0:
                     <td>
                         <span title="${LOCALE["chips"]["names"][chip_id]}" data-bs-toggle="tooltip" data-bs-placement="right">
                             <img src="/images/chips/${chip_id}.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" width="28" height="28">

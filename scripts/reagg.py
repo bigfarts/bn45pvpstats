@@ -31,16 +31,27 @@ def merge_latest_ts(vs):
     return d.isoformat() if d is not None else None
 
 
+NUM_NAVIS = 23
+
+NUM_CHIPS = 350
+
+
 def merge_wins(vs):
-    return [[sum(row) for row in zip(*rows)] for rows in zip(*vs)]
+    return [
+        [sum(row) for row in zip(*rows)]
+        for rows in zip([[0] * NUM_NAVIS for _ in range(NUM_NAVIS)], *vs)
+    ]
 
 
 def merge_picks(vs):
-    return [sum(row) for row in zip(*vs)]
+    return [sum(row) for row in zip([0] * NUM_NAVIS, *vs)]
 
 
 def merge_turns_to_win(vs):
-    return [[cell for row in rows for cell in row] for rows in zip(*vs)]
+    return [
+        [cell for row in rows for cell in row]
+        for rows in zip([[] for _ in range(NUM_NAVIS)], *vs)
+    ]
 
 
 def merge_chips(vs):
@@ -52,7 +63,12 @@ def merge_chips(vs):
             tot = [wins1 + wins2, losses1 + losses2]
         return tot
 
-    return [[_merge_row(row) for row in zip(*rows)] for rows in zip(*vs)]
+    return [
+        [_merge_row(row) for row in zip(*rows)]
+        for rows in zip(
+            [[[0, 0] for _ in range(NUM_CHIPS)] for _ in range(NUM_NAVIS)], *vs
+        )
+    ]
 
 
 def merge(ds):

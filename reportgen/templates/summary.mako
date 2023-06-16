@@ -68,14 +68,6 @@ def get_ranking(row, all_picks):
                     <%
                         navi = NAVIS[i]
                         name = LOCALE["common"]["navis"][i]
-                        winrate = wins / total if total != 0 else None
-                        pickrate = picks / total_picks if total_picks != 0 else 0
-
-                        rel_winrate = winrate
-                        rel_pickrate = picks / max_picks if max_picks != 0 else 0
-
-                        win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
-                        pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
                     %>
                     <td class="align-middle${" table-secondary" if picks == 0 else ""}">
                         <a href="/${LANG}/navis/${navi}/${agg_period}" title="${name}" data-bs-toggle="tooltip" data-bs-placement="right">
@@ -83,6 +75,16 @@ def get_ranking(row, all_picks):
                         </a>
                     </td>
                     % if total != 0:
+                    <%
+                        winrate = wins / total
+                        pickrate = picks / total_picks
+
+                        rel_winrate = winrate
+                        rel_pickrate = picks / max_picks
+
+                        win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
+                        pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
+                    %>
                     <td class="align-middle">
                         <div><small>${picks}/${total_picks} (${f'{pickrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
