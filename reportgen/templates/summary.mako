@@ -25,7 +25,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
         total_picks = sum(all_picks)
         max_picks = max(all_picks)
 
-        ranking.append((i, wins, total, picks, median_turns_to_win, total_picks, max_picks))
+        ranking.append((i, wins, total, picks, total_picks, max_picks, median_turns_to_win))
     ranking.sort(key=lambda kv: kv[3] / kv[4] if kv[4] != 0 else float('-inf'), reverse=True)
     return ranking
 %>
@@ -70,7 +70,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
                 %>
                 % for row in rankings_t:
                 <tr>
-                    % for colno, (i, wins, total, picks, median_turns_to_win, total_picks, max_picks) in enumerate(row):
+                    % for colno, (i, wins, total, picks, total_picks, max_picks, median_turns_to_win) in enumerate(row):
                     <%
                         navi = NAVIS[i]
                         name = LOCALE["common"]["navis"][i]
