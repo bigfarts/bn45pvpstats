@@ -29,9 +29,9 @@ navis = [
 
 [agg_periods]
 "1week" = "1週間"
-"1month" = "1ヶ月"
-"3month" = "3ヶ月"
-alltime = "全ての時間"
+"1month" = "1ヶ月間"
+"3month" = "3ヶ月間"
+alltime = "全期間"
 
 [stats]
 picks = "選択"
