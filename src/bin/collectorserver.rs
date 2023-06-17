@@ -80,6 +80,8 @@ async fn handle_submit_request(
     let mut metadata = tango_pvp::replay::decode_metadata(version, &mut &metadata_buf[..])
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
+    metadata.link_code = "".to_string();
+
     if let Some(side) = metadata.local_side.as_mut() {
         side.nickname = "".to_string();
     }
