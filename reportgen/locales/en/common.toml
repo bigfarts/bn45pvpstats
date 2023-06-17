@@ -36,7 +36,8 @@ alltime = "all time"
 [stats]
 picks = "picks"
 wins = "wins"
-turns-to-win = "med win turns"
+turns-to-win = "turns to win"
+turns-to-win-hint = "{turns} turns: {count}"
 
 [facets]
 picks-and-wins = "Picks and wins"

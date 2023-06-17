@@ -40,7 +40,7 @@ def get_chips_ranking(winning_chips, picks):
                     <th style="width: 72.5px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
-                    <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
+                    <th style="width: 128px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
                     % endfor
                 </tr>
             </thead>
@@ -50,7 +50,12 @@ def get_chips_ranking(winning_chips, picks):
                     <%
                         wins = sum(tab["wins"][current_navi]) if tab["wins"] else 0
                         picks = tab["picks"][current_navi] if tab["picks"] else 0
-                        median_turns_to_win = statistics.median(tab["turns_to_win"][current_navi]) if tab["turns_to_win"][current_navi] else 0
+                        turns_to_win = tab["turns_to_win"][current_navi]
+
+                        turns_to_win_counts = [0] * 16
+                        for v in turns_to_win:
+                            turns_to_win_counts[v] += 1
+                        max_turns_to_win_count = max(turns_to_win_counts)
 
                         losses = sum(tab["wins"][i][current_navi] for i in range(len(NAVIS))) if tab["wins"] else 0
                         total = wins + losses
@@ -62,11 +67,9 @@ def get_chips_ranking(winning_chips, picks):
 
                         rel_winrate = winrate
                         rel_pickrate = picks / max_picks if max_picks != 0 else 0
-                        rel_median_turns_to_win = median_turns_to_win / 15.0
 
                         win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
                         pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))]
-                        median_turns_to_win_color = PurpOr_7.colors[round(rel_median_turns_to_win * (len(PurpOr_7.colors) - 1))]
                     %>
                     % if total != 0:
                     <td></td>
@@ -83,9 +86,14 @@ def get_chips_ranking(winning_chips, picks):
                         </div>
                     </td>
                     <td class="align-middle border-end">
-                        <div><small>${f'{median_turns_to_win:.0f}'}</small></div>
-                        <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({median_turns_to_win_color[0]}, {median_turns_to_win_color[1]}, {median_turns_to_win_color[2]})"}; width: ${rel_median_turns_to_win * 100}%; height: 100%"></div>
+                        <div class="d-flex flex-row align-items-end" style="height: 48px">
+                            % for i, v in enumerate(turns_to_win_counts):
+                            <%
+                            rel_v = v / max_turns_to_win_count if max_turns_to_win_count else 0
+                            v_color = PurpOr_7.colors[round(rel_v * (len(PurpOr_7.colors) - 1))]
+                            %>
+                            <div style="height: ${rel_v * 100}%; width: 5px; background-color: ${f"rgb({v_color[0]}, {v_color[1]}, {v_color[2]})"}; margin-right: 2px" title="${LOCALE["common"]["stats"]["turns-to-win-hint"].format(turns=i, count=v)}" data-bs-toggle="tooltip" data-bs-placement="top"></div>
+                            % endfor
                         </div>
                     </td>
                     % else:
@@ -120,7 +128,7 @@ def get_chips_ranking(winning_chips, picks):
                     <th style="width: 72.5px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
-                    <th style="width: 150px" class="border-end"></th>
+                    <th style="width: 128px" class="border-end"></th>
                     % endfor
                 </tr>
             </thead>

@@ -20,12 +20,10 @@ def get_ranking(row, all_picks, all_turns_to_win):
         picks = all_picks[i] if all_picks else 0
         turns_to_win = all_turns_to_win[i]
 
-        median_turns_to_win = statistics.median(turns_to_win) if turns_to_win else 0
-
         total_picks = sum(all_picks)
         max_picks = max(all_picks)
 
-        ranking.append((i, wins, total, picks, total_picks, max_picks, median_turns_to_win))
+        ranking.append((i, wins, total, picks, total_picks, max_picks, turns_to_win))
     ranking.sort(key=lambda kv: kv[3] / kv[4] if kv[4] != 0 else float('-inf'), reverse=True)
     return ranking
 %>
@@ -52,7 +50,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
                     <th></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
-                    <th style="width: 150px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
+                    <th style="width: 128px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
                     % endfor
                 </tr>
             </thead>
@@ -70,7 +68,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
                 %>
                 % for row in rankings_t:
                 <tr>
-                    % for colno, (i, wins, total, picks, total_picks, max_picks, median_turns_to_win) in enumerate(row):
+                    % for colno, (i, wins, total, picks, total_picks, max_picks, turns_to_win) in enumerate(row):
                     <%
                         navi = NAVIS[i]
                         name = LOCALE["common"]["navis"][i]
@@ -87,11 +85,14 @@ def get_ranking(row, all_picks, all_turns_to_win):
 
                         rel_winrate = winrate
                         rel_pickrate = picks / max_picks
-                        rel_median_turns_to_win = median_turns_to_win / 15.0
+
+                        turns_to_win_counts = [0] * 16
+                        for v in turns_to_win:
+                            turns_to_win_counts[v] += 1
+                        max_turns_to_win_count = max(turns_to_win_counts)
 
                         win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
                         pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
-                        median_turns_to_win_color = PurpOr_7.colors[round(rel_median_turns_to_win * (len(PurpOr_7.colors) - 1))]
                     %>
                     <td class="align-middle">
                         <div><small>${picks}/${total_picks} (${f'{pickrate:.2f}'})</small></div>
@@ -106,9 +107,14 @@ def get_ranking(row, all_picks, all_turns_to_win):
                         </div>
                     </td>
                     <td class="align-middle border-end">
-                        <div><small>${f'{median_turns_to_win:.0f}'}</small></div>
-                        <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({median_turns_to_win_color[0]}, {median_turns_to_win_color[1]}, {median_turns_to_win_color[2]})"}; width: ${rel_median_turns_to_win * 100}%; height: 100%"></div>
+                        <div class="d-flex flex-row align-items-end" style="height: 48px">
+                            % for i, v in enumerate(turns_to_win_counts):
+                            <%
+                            rel_v = v / max_turns_to_win_count if max_turns_to_win_count else 0
+                            v_color = PurpOr_7.colors[round(rel_v * (len(PurpOr_7.colors) - 1))]
+                            %>
+                            <div style="height: ${rel_v * 100}%; width: 5px; background-color: ${f"rgb({v_color[0]}, {v_color[1]}, {v_color[2]})"}; margin-right: 2px" title="${LOCALE["common"]["stats"]["turns-to-win-hint"].format(turns=i, count=v)}" data-bs-toggle="tooltip" data-bs-placement="top"></div>
+                            % endfor
                         </div>
                     </td>
                     % else:
