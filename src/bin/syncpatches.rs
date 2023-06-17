@@ -5,7 +5,7 @@ use tokio::io::AsyncWriteExt;
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     env_logger::Builder::from_default_env()
-        .filter(Some("patchessyncserver"), log::LevelFilter::Info)
+        .filter(Some("syncpatches"), log::LevelFilter::Info)
         .init();
 
     let root = std::path::Path::new("patches");
@@ -78,5 +78,6 @@ async fn main() -> Result<(), anyhow::Error> {
     )
     .await?;
 
+    log::info!("syncpatches complete!");
     Ok(())
 }

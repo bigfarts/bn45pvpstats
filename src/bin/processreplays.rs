@@ -248,7 +248,7 @@ async fn process_one(
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_default_env()
-        .filter(Some("scannerserver"), log::LevelFilter::Info)
+        .filter(Some("processreplays"), log::LevelFilter::Info)
         .init();
     mgba::log::init();
 
@@ -318,5 +318,6 @@ async fn main() -> anyhow::Result<()> {
     }))
     .await;
 
+    log::info!("processreplays complete!");
     Ok(())
 }
