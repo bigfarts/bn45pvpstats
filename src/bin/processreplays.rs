@@ -69,68 +69,6 @@ async fn hash_and_move_one(
     Ok(())
 }
 
-async fn run_once(
-    args: &Args,
-    db_pool: sqlx::Pool<sqlx::postgres::Postgres>,
-) -> Result<(), anyhow::Error> {
-    // Hash pending replays.
-    for entry in std::fs::read_dir(&args.pending_replays_dir)?
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?
-    {
-        let path = entry.path();
-        if path.extension() != Some(std::ffi::OsStr::new("tangoreplay")) {
-            continue;
-        }
-        if let Err(err) = hash_and_move_one(args, &path).await {
-            log::error!("hash and move one error for {}: {}", path.display(), err);
-        }
-    }
-
-    // Process hashed replays.
-    let hashed_replays = std::fs::read_dir(&args.hashed_replays_dir)?
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?
-        .into_iter()
-        .filter(|entry| entry.path().extension() == Some(std::ffi::OsStr::new("tangoreplay")))
-        .collect::<Vec<_>>();
-
-    let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(num_cpus::get()));
-
-    futures_util::future::join_all(hashed_replays.into_iter().map(|entry| {
-        let args = args.clone();
-        let db_pool = db_pool.clone();
-        let sem = sem.clone();
-        tokio::spawn(async move {
-            let _permit = sem.acquire().await.unwrap();
-
-            let replay_path = entry.path();
-
-            if let Err(err) = process_one(&args, &replay_path, db_pool).await {
-                log::error!("process one error for {}: {}", replay_path.display(), err);
-                if matches!(err, ProcessError::NonRetriable(_)) {
-                    std::fs::rename(
-                        &replay_path,
-                        args.rejected_replays_dir
-                            .join(replay_path.file_name().unwrap()),
-                    )
-                    .unwrap();
-                }
-            } else {
-                log::info!("process one done for {}", replay_path.display());
-                std::fs::rename(
-                    &replay_path,
-                    args.done_replays_dir.join(replay_path.file_name().unwrap()),
-                )
-                .unwrap();
-            }
-        })
-    }))
-    .await;
-
-    Ok(())
-}
-
 #[derive(thiserror::Error, Debug)]
 enum ProcessError {
     #[error("non-retriable: {0}")]
@@ -325,12 +263,60 @@ async fn main() -> anyhow::Result<()> {
         .connect(&args.db)
         .await?;
 
-    loop {
-        if let Err(err) = run_once(&args, db_pool.clone()).await {
-            log::error!("run error: {}", err);
+    // Hash pending replays.
+    for entry in std::fs::read_dir(&args.pending_replays_dir)?
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?
+    {
+        let path = entry.path();
+        if path.extension() != Some(std::ffi::OsStr::new("tangoreplay")) {
+            continue;
         }
-
-        const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_secs(5);
-        tokio::time::sleep(SLEEP_DURATION).await;
+        if let Err(err) = hash_and_move_one(&args, &path).await {
+            log::error!("hash and move one error for {}: {}", path.display(), err);
+        }
     }
+
+    // Process hashed replays.
+    let hashed_replays = std::fs::read_dir(&args.hashed_replays_dir)?
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .filter(|entry| entry.path().extension() == Some(std::ffi::OsStr::new("tangoreplay")))
+        .collect::<Vec<_>>();
+
+    let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(num_cpus::get()));
+
+    futures_util::future::join_all(hashed_replays.into_iter().map(|entry| {
+        let args = args.clone();
+        let db_pool = db_pool.clone();
+        let sem = sem.clone();
+        tokio::spawn(async move {
+            let _permit = sem.acquire().await.unwrap();
+
+            let replay_path = entry.path();
+
+            if let Err(err) = process_one(&args, &replay_path, db_pool).await {
+                log::error!("process one error for {}: {}", replay_path.display(), err);
+                if matches!(err, ProcessError::NonRetriable(_)) {
+                    std::fs::rename(
+                        &replay_path,
+                        args.rejected_replays_dir
+                            .join(replay_path.file_name().unwrap()),
+                    )
+                    .unwrap();
+                }
+            } else {
+                log::info!("process one done for {}", replay_path.display());
+                std::fs::rename(
+                    &replay_path,
+                    args.done_replays_dir.join(replay_path.file_name().unwrap()),
+                )
+                .unwrap();
+            }
+        })
+    }))
+    .await;
+
+    Ok(())
 }

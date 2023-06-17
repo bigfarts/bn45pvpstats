@@ -2,7 +2,15 @@ use futures::StreamExt;
 use itertools::Itertools;
 use tokio::io::AsyncWriteExt;
 
-async fn run_once(root: &std::path::Path) -> Result<(), anyhow::Error> {
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    env_logger::Builder::from_default_env()
+        .filter(Some("patchessyncserver"), log::LevelFilter::Info)
+        .init();
+
+    let root = std::path::Path::new("patches");
+    std::fs::create_dir_all(root)?;
+
     let client = reqwest::Client::new();
     let entries = tokio::time::timeout(
         // 30 second timeout to fetch JSON.
@@ -69,25 +77,6 @@ async fn run_once(root: &std::path::Path) -> Result<(), anyhow::Error> {
         4,
     )
     .await?;
+
     Ok(())
-}
-
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-    env_logger::Builder::from_default_env()
-        .filter(Some("patchessyncserver"), log::LevelFilter::Info)
-        .init();
-
-    let root = std::path::Path::new("patches");
-    std::fs::create_dir_all(root)?;
-
-    loop {
-        if let Err(err) = run_once(root).await {
-            log::error!("patch sync error: {}", err);
-        }
-
-        const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_secs(5 * 60);
-        log::info!("sleeping for {:?}", SLEEP_DURATION);
-        tokio::time::sleep(SLEEP_DURATION).await;
-    }
 }
