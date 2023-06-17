@@ -89,10 +89,11 @@ def get_chips_ranking(winning_chips, picks):
                         <div class="d-flex flex-row align-items-end" style="height: 48px">
                             % for i, v in enumerate(turns_to_win_counts):
                             <%
-                            rel_v = v / max_turns_to_win_count if max_turns_to_win_count else 0
+                            rel_v = v / max_turns_to_win_count if max_turns_to_win_count != 0 else 0
+                            rate = v / sum(turns_to_win_counts) if sum(turns_to_win_counts) != 0 else 0
                             v_color = PurpOr_7.colors[round(rel_v * (len(PurpOr_7.colors) - 1))]
                             %>
-                            <div style="height: ${rel_v * 100}%; width: 5px; background-color: ${f"rgb({v_color[0]}, {v_color[1]}, {v_color[2]})"}; margin-right: 2px" title="${LOCALE["common"]["stats"]["turns-to-win-hint"].format(turns=i, count=v)}" data-bs-toggle="tooltip" data-bs-placement="top"></div>
+                            <div style="height: ${rel_v * 100}%; width: 5px; background-color: ${f"rgb({v_color[0]}, {v_color[1]}, {v_color[2]})"}; margin-right: 2px" title="${LOCALE["common"]["stats"]["turns-to-win-hint"].format(turns=i, count=v, rate=rate)}" data-bs-toggle="tooltip" data-bs-placement="top"></div>
                             % endfor
                         </div>
                     </td>
