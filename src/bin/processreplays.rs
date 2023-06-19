@@ -191,9 +191,9 @@ async fn process_one(
         vec![(0x0800E092, {
             Box::new(move |mut core: mgba::core::CoreMutRef| {
                 let chip_id = core.as_ref().gba().cpu().gpr(0) as u32;
-                let is_winner = core
+                let is_winner = (core
                     .raw_read_8((core.as_ref().gba().cpu().gpr(5) + 0x16) as u32, -1)
-                    ^ core.raw_read_8(0x0203301D, -1)
+                    ^ core.raw_read_8(0x0203301D, -1))
                     == 0;
                 let mut chip_uses = chip_uses.lock();
                 *chip_uses.entry((is_winner, chip_id)).or_insert(0) += 1;
