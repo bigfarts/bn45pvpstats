@@ -160,6 +160,8 @@ def get_chips(conn, agg_period, netplay_compatibility, on, navi):
     )
     winning_chips = [[0, 0] for _ in range(NUM_CHIPS)]
     for chip_id, wins, losses in cur:
+        if chip_id >= len(winning_chips):
+            continue
         winning_chips[chip_id] = (wins, losses)
     return winning_chips
 
