@@ -13,6 +13,15 @@
         body {
             height: 100%;
         }
+
+        html[lang="ja"] .name {
+            overflow: hidden;
+            display: inline-block;
+            white-space: nowrap;
+            transform-origin: center left;
+            transform: scaleX(0.8) translateX(0.5rem);
+            margin-left: -0.5rem;
+        }
         </style>
         <title>${LOCALE["common"]["title"]}</title>
     </head>
@@ -41,9 +50,9 @@
                 <ul class="nav nav-pills flex-column flex-nowrap overflow-auto">
                     % for i, name in ((i, v) for i, v in enumerate(NAVIS) if v is not None):
                     <li class="nav-item px-2">
-                        <a href="/${LANG}/navis/${name}/${agg_period}" class="px-2 nav-link ${"active" if current_navi == i else "link-body-emphasis"}">
-                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${name}.png" class="pe-none me-2" style="image-rendering: pixelated" height="48" width="40">
-                            ${LOCALE["common"]["navis"][i]}
+                        <a href="/${LANG}/navis/${name}/${agg_period}" class="px-2 nav-link d-flex align-items-center ${"active" if current_navi == i else "link-body-emphasis"}">
+                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${name}.png" class="d-block pe-none me-2" style="image-rendering: pixelated" height="48" width="40">
+                            <span class="name">${LOCALE["common"]["navis"][i]}</span>
                         </a>
                     </li>
                     % endfor

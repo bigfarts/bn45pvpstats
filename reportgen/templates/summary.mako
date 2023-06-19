@@ -75,7 +75,8 @@ def get_ranking(row, all_picks, all_turns_to_win):
                     %>
                     <td class="align-middle${" table-secondary" if picks == 0 else ""}">
                         <a href="/${LANG}/navis/${navi}/${agg_period}" class="d-flex align-items-center">
-                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${navi}.png" alt="${name}" style="image-rendering: pixelated" class="d-block me-2"> ${name}
+                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${navi}.png" alt="${name}" style="image-rendering: pixelated" class="d-block me-2">
+                            <span class="name">${name}</span>
                         </a>
                     </td>
                     % if total != 0:

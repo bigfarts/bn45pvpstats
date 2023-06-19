@@ -156,7 +156,8 @@ def get_chips_ranking(winning_chips, picks):
                     %>
                     <td>
                         <div class="d-flex align-items-center">
-                            <img src="/images/chips/${chip_id}_full.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" class="d-block me-2" width="56" height="48"> ${LOCALE["chips"]["names"][chip_id]}
+                            <img src="/images/chips/${chip_id}_full.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" class="d-block me-2" width="56" height="48">
+                            <span class="name">${LOCALE["chips"]["names"][chip_id]}</span>
                         </div>
                     </td>
                     <td class="align-middle">
