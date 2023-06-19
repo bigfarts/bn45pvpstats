@@ -130,7 +130,7 @@ def get_chips(conn, agg_period, netplay_compatibility, on, navi):
                 where
                     exists (
                         select *
-                        from folder_chips fc2
+                        from chip_uses fc2
                         where
                             fc2.rounds_hash = selected_rounds.hash and
                             fc2.chip_id = fc1.chip_id and
@@ -145,7 +145,7 @@ def get_chips(conn, agg_period, netplay_compatibility, on, navi):
                 where
                     exists (
                         select *
-                        from folder_chips fc2
+                        from chip_uses fc2
                         where
                             fc2.rounds_hash = selected_rounds.hash and
                             fc2.chip_id = fc1.chip_id and
@@ -153,7 +153,7 @@ def get_chips(conn, agg_period, netplay_compatibility, on, navi):
                         ) and
                     loser = %s
             ) losses
-        from folder_chips fc1
+        from chip_uses fc1
         group by chip_id
         """,
         (netplay_compatibility, agg_period, on, navi, navi, navi),
