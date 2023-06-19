@@ -8,7 +8,7 @@ create table rounds
 );
 
 create table folder_chips
-( rounds_hash bytea not null references rounds (hash)
+( rounds_hash bytea not null references rounds (hash) on update cascade on delete cascade
 , is_winner boolean not null
 , idx integer not null
 , chip_id integer not null
@@ -18,7 +18,7 @@ create table folder_chips
 );
 
 create table chip_uses
-( rounds_hash bytea not null references rounds (hash)
+( rounds_hash bytea not null references rounds (hash) on update cascade on delete cascade
 , is_winner boolean not null
 , chip_id integer not null
 , uses integer not null
