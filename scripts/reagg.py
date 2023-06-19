@@ -57,12 +57,8 @@ def merge_turns_to_win(vs):
 
 def merge_chips(vs):
     def _merge_row(row):
-        tot = [0, 0]
-        for col in row:
-            wins1, losses1 = tot
-            wins2, losses2 = col
-            tot = [wins1 + wins2, losses1 + losses2]
-        return tot
+        wins, losses = zip(*row)
+        return [sum(wins), sum(losses)]
 
     return [
         [_merge_row(row) for row in zip(*rows)]
