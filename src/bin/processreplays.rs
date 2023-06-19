@@ -180,10 +180,30 @@ async fn process_one(
         .apply(&rom)
         .map_err(|e| ProcessError::NonRetriable(e.into()))?;
 
+    let chip_uses = std::sync::Arc::new(parking_lot::Mutex::new(std::collections::HashMap::<
+        (bool, u32),
+        usize,
+    >::new()));
+
     let hooks = tango_pvp::hooks::hooks_for_gamedb_entry(&tango_gamedb::BR4J_00).unwrap();
-    let (result, state) = tango_pvp::eval::eval(&replay, &rom, hooks)
+    let extra_traps = || {
+        let chip_uses = chip_uses.clone();
+        vec![(0x0800E092, {
+            Box::new(move |mut core: mgba::core::CoreMutRef| {
+                let chip_id = core.as_ref().gba().cpu().gpr(0) as u32;
+                let is_winner = core
+                    .raw_read_8((core.as_ref().gba().cpu().gpr(5) + 0x16) as u32, -1)
+                    ^ core.raw_read_8(0x0203301D, -1)
+                    == 0;
+                let mut chip_uses = chip_uses.lock();
+                *chip_uses.entry((is_winner, chip_id)).or_insert(0) += 1;
+            }) as Box<dyn Fn(mgba::core::CoreMutRef)>
+        })]
+    };
+    let (result, state) = tango_pvp::eval::eval(&replay, &rom, hooks, extra_traps)
         .await
         .map_err(|e| ProcessError::NonRetriable(e.into()))?;
+    let chip_uses = std::sync::Arc::into_inner(chip_uses).unwrap().into_inner();
 
     if result.outcome != tango_pvp::stepper::BattleOutcome::Win {
         // Only keep track of wins.
@@ -237,6 +257,22 @@ async fn process_one(
             .execute(&mut *tx)
             .await.map_err(|e| ProcessError::Retriable(e.into()))?;
         }
+    }
+    for ((is_winner, chip_id), uses) in chip_uses.iter() {
+        sqlx::query!(
+            "
+                insert into chip_uses (rounds_hash, is_winner, chip_id, uses)
+                values ($1, $2, $3, $4)
+                on conflict (rounds_hash, is_winner, chip_id) do nothing
+                ",
+            hash,
+            is_winner,
+            *chip_id as i32,
+            *uses as i32
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| ProcessError::Retriable(e.into()))?;
     }
     tx.commit()
         .await

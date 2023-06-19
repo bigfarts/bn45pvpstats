@@ -233,6 +233,7 @@ dependencies = [
  "log",
  "mgba",
  "num_cpus",
+ "parking_lot",
  "prost",
  "reqwest",
  "routerify",

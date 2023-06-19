@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                insert into chip_uses (rounds_hash, is_winner, chip_id, uses)\n                values ($1, $2, $3, $4)\n                on conflict (rounds_hash, is_winner, chip_id) do nothing\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Bool",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7ac5b5b90a0e89c87f05c2336213afb41c3bd8993101a4b8eea497c1e2ba0136"
+}
