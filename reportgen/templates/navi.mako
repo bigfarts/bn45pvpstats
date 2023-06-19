@@ -37,7 +37,7 @@ def get_chips_ranking(winning_chips, picks):
                 </tr>
                 <tr>
                     % for _, _ in data:
-                    <th style="width: 72.5px"></th>
+                    <th style="width: 200px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
                     <th style="width: 128px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
@@ -126,7 +126,7 @@ def get_chips_ranking(winning_chips, picks):
                 </tr>
                 <tr>
                     % for _, _ in data:
-                    <th style="width: 72.5px"></th>
+                    <th style="width: 200px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
                     <th style="width: 128px" class="border-end"></th>
@@ -155,9 +155,9 @@ def get_chips_ranking(winning_chips, picks):
                         pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
                     %>
                     <td>
-                        <span title="${LOCALE["chips"]["names"][chip_id]}" data-bs-toggle="tooltip" data-bs-placement="right">
-                            <img src="/images/chips/${chip_id}_full.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" width="56" height="48">
-                        </span>
+                        <div class="d-flex align-items-center">
+                            <img src="/images/chips/${chip_id}_full.png" alt="${LOCALE["chips"]["names"][chip_id]}" style="image-rendering: pixelated" class="d-block me-2" width="56" height="48"> ${LOCALE["chips"]["names"][chip_id]}
+                        </div>
                     </td>
                     <td class="align-middle">
                         <div><small>${total}/${picks} (${f'{pickrate:.2f}'})</small></div>

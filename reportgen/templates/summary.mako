@@ -47,7 +47,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
                 </tr>
                 <tr>
                     % for _, _ in data:
-                    <th></th>
+                    <th style="width: 200px"></th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
                     <th style="width: 128px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
@@ -74,8 +74,8 @@ def get_ranking(row, all_picks, all_turns_to_win):
                         name = LOCALE["common"]["navis"][i]
                     %>
                     <td class="align-middle${" table-secondary" if picks == 0 else ""}">
-                        <a href="/${LANG}/navis/${navi}/${agg_period}" title="${name}" data-bs-toggle="tooltip" data-bs-placement="right">
-                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${navi}.png" alt="${name}" style="image-rendering: pixelated">
+                        <a href="/${LANG}/navis/${navi}/${agg_period}" class="d-flex align-items-center">
+                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${navi}.png" alt="${name}" style="image-rendering: pixelated" class="d-block me-2"> ${name}
                         </a>
                     </td>
                     % if total != 0:
