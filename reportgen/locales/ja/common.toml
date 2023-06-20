@@ -34,8 +34,7 @@ navis = [
 alltime = "全期間"
 
 [stats]
-picks = "選択"
-wins = "勝利"
+picks-and-wins = "選択と勝利"
 turns-to-win = "勝利ターン"
 turns-to-win-hint = "{turns}ターン目：{count}（{rate:.02f}）"
 

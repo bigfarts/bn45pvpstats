@@ -54,14 +54,13 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
             <thead class="sticky-top">
                 <tr>
                     % for date, _ in data:
-                    <th colspan="4" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
+                    <th colspan="3" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
                     % endfor
                 </tr>
                 <tr>
                     % for _, _ in data:
                     <th style="width: 200px"></th>
-                    <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
-                    <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
+                    <th style="width: 300px">${LOCALE["common"]["stats"]["picks"]}</th>
                     <th style="width: 128px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
                     % endfor
                 </tr>
@@ -108,15 +107,11 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
                         pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
                     %>
                     <td class="align-middle">
-                        <div><small>${picks}/${total_picks} (${f'{pickrate:.2f}'})</small></div>
+                        <div><small>${wins}/${picks}/${total_picks} (${f'{winrate:.2f}'}/${f'{pickrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
-                        </div>
-                    </td>
-                    <td class="align-middle">
-                        <div><small>${wins}/${picks} (${f'{winrate:.2f}'})</small></div>
-                        <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
+                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%">
+                                <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
+                            </div>
                         </div>
                     </td>
                     <td class="align-middle border-end">
@@ -132,7 +127,7 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
                         </div>
                     </td>
                     % else:
-                    <td class="text-center align-middle${" table-secondary" if picks == 0 else ""}" colspan="3">
+                    <td class="text-center align-middle${" table-secondary" if picks == 0 else ""}" colspan="2">
                         ${LOCALE["common"]["no-data"]}
                     </td>
                     % endif
@@ -156,14 +151,13 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
             <thead class="sticky-top">
                 <tr>
                     % for date, _ in data:
-                    <th colspan="4" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
+                    <th colspan="3" class="text-center border-end">${date.strftime("%Y-%m-%d")}</th>
                     % endfor
                 </tr>
                 <tr>
                     % for _, _ in data:
                     <th style="width: 200px"></th>
-                    <th style="width: 150px">${LOCALE["common"]["stats"]["picks"]}</th>
-                    <th style="width: 150px">${LOCALE["common"]["stats"]["wins"]}</th>
+                    <th style="width: 300px">${LOCALE["common"]["stats"]["picks-and-wins"]}</th>
                     <th style="width: 128px" class="border-end"></th>
                     % endfor
                 </tr>
@@ -196,20 +190,16 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
                         </div>
                     </td>
                     <td class="align-middle">
-                        <div><small>${total}/${picks} (${f'{pickrate:.2f}'})</small></div>
+                        <div><small>${wins}/${total}/${picks} (${f'{winrate:.2f}'}/${f'{pickrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
-                        </div>
-                    </td>
-                    <td class="align-middle">
-                        <div><small>${wins}/${total} (${f'{winrate:.2f}'})</small></div>
-                        <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
+                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%">
+                                <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
+                            </div>
                         </div>
                     </td>
                     <td class="border-end"></td>
                     % else:
-                    <td class="border-end${" table-secondary" if total == 0 else ""}" colspan="4"></td>
+                    <td class="border-end${" table-secondary" if total == 0 else ""}" colspan="3"></td>
                     % endif
                     % endfor
                 </tr>
