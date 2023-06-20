@@ -60,7 +60,7 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
                 <tr>
                     % for _, _ in data:
                     <th style="width: 200px"></th>
-                    <th style="width: 200px">${LOCALE["common"]["stats"]["picks-and-wins"]}</th>
+                    <th style="width: 300px">${LOCALE["common"]["stats"]["picks-and-wins"]}</th>
                     <th style="width: 128px" class="border-end">${LOCALE["common"]["stats"]["turns-to-win"]}</th>
                     % endfor
                 </tr>
@@ -157,7 +157,7 @@ def get_h2h_ranking(current_navi, all_wins, all_turns_to_win):
                 <tr>
                     % for _, _ in data:
                     <th style="width: 200px"></th>
-                    <th style="width: 200px">${LOCALE["common"]["stats"]["picks-and-wins"]}</th>
+                    <th style="width: 300px">${LOCALE["common"]["stats"]["picks-and-wins"]}</th>
                     <th style="width: 128px" class="border-end"></th>
                     % endfor
                 </tr>
