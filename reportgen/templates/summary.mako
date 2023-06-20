@@ -8,23 +8,24 @@ from palettable.cartocolors.sequential import TealGrn_7, RedOr_7, PurpOr_7
 %>
 
 <%
-def get_ranking(row, all_picks, all_turns_to_win):
+def get_ranking(all_wins, all_turns_to_win):
     ranking = []
-    for i, w in enumerate(row):
+
+    wins = [0] * len(NAVIS)
+    losses = [0] * len(NAVIS)
+    for i, w in enumerate(all_wins):
+        wins[i] = sum(w)
+        losses[i] = sum(list(zip(*all_wins))[i])
+
+    total_picks = sum(sum(w) for w in all_wins)
+    max_picks = max(win + loss for win, loss in zip(wins, losses))
+
+    for i, (win, loss) in enumerate(zip(wins, losses)):
         if NAVIS[i] is None:
             continue
-        wins = sum(w)
-        losses = sum(list(zip(*row))[i])
-        total = wins + losses
-
-        picks = all_picks[i] if all_picks else 0
-        turns_to_win = all_turns_to_win[i]
-
-        total_picks = sum(all_picks)
-        max_picks = max(all_picks)
-
-        ranking.append((i, wins, total, picks, total_picks, max_picks, turns_to_win))
-    ranking.sort(key=lambda kv: kv[3] / kv[4] if kv[4] != 0 else float('-inf'), reverse=True)
+        turns_to_win = [t for turns_to_win in all_turns_to_win[i] for t in turns_to_win]
+        ranking.append((i, win, win + loss, total_picks, max_picks, turns_to_win))
+    ranking.sort(key=lambda kv: kv[2], reverse=True)
     return ranking
 %>
 
@@ -59,16 +60,16 @@ def get_ranking(row, all_picks, all_turns_to_win):
                 legal_navis = [i for i, v in enumerate(NAVIS) if v is not None]
 
                 rankings_t = [
-                    [v if v is not None else [legal_navis[i], 0, 0, 0, 0, 0] for v in vs]
+                    [v if v is not None else [legal_navis[i], 0, 0, 0, 0, 0, []] for v in vs]
                     for i, vs in enumerate(itertools.zip_longest(
-                        *(get_ranking(tab["wins"], tab["picks"], tab["turns_to_win"]) for _, tab in data),
+                        *(get_ranking(tab["wins"], tab["turns_to_win"]) for _, tab in data),
                         fillvalue=None,
                     ))
                 ]
                 %>
                 % for row in rankings_t:
                 <tr>
-                    % for colno, (i, wins, total, picks, total_picks, max_picks, turns_to_win) in enumerate(row):
+                    % for colno, (i, wins, picks, total_picks, max_picks, turns_to_win) in enumerate(row):
                     <%
                         navi = NAVIS[i]
                         name = LOCALE["common"]["navis"][i]
@@ -79,9 +80,9 @@ def get_ranking(row, all_picks, all_turns_to_win):
                             <span class="name">${name}</span>
                         </a>
                     </td>
-                    % if total != 0:
+                    % if picks != 0:
                     <%
-                        winrate = wins / total
+                        winrate = wins / picks
                         pickrate = picks / total_picks
 
                         rel_winrate = winrate
@@ -102,7 +103,7 @@ def get_ranking(row, all_picks, all_turns_to_win):
                         </div>
                     </td>
                     <td class="align-middle">
-                        <div><small>${wins}/${total} (${f'{winrate:.2f}'})</small></div>
+                        <div><small>${wins}/${picks} (${f'{winrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
                             <div style="background-color: ${f"rgb({win_color[0]}, {win_color[1]}, {win_color[2]})" if win_color is not None else "0, 0, 0"}; width: ${rel_winrate * 100 if winrate is not None else 0}%; height: 100%"></div>
                         </div>
