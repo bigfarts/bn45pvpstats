@@ -34,7 +34,8 @@ navis = [
 alltime = "all time"
 
 [stats]
-picks-and-wins = "picks and wins"
+picks = "picks"
+wins = "wins"
 turns-to-win = "turns to win"
 turns-to-win-hint = "{turns} turns: {count} ({rate:.02f})"
 
