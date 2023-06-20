@@ -17,7 +17,7 @@ def get_ranking(all_wins, all_turns_to_win):
         wins[i] = sum(w)
         losses[i] = sum(list(zip(*all_wins))[i])
 
-    total_picks = sum(sum(w) for w in all_wins)
+    total_picks = sum(sum(w) for w in all_wins) * 2
     max_picks = max(win + loss for win, loss in zip(wins, losses))
 
     for i, (win, loss) in enumerate(zip(wins, losses)):
