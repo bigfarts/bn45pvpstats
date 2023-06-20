@@ -286,7 +286,6 @@ async fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_default_env()
         .filter(Some("processreplays"), log::LevelFilter::Info)
         .init();
-    mgba::log::init();
 
     let args = Args::parse();
 

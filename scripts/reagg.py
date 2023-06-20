@@ -44,14 +44,10 @@ def merge_wins(vs):
     ]
 
 
-def merge_picks(vs):
-    return [sum(row) for row in zip([0] * NUM_NAVIS, *vs)]
-
-
 def merge_turns_to_win(vs):
     return [
-        [cell for row in rows for cell in row]
-        for rows in zip([[] for _ in range(NUM_NAVIS)], *vs)
+        [[cell for cells in row for cell in cells] for row in zip(*rows)]
+        for rows in zip([[[] for _ in range(NUM_NAVIS)] for _ in range(NUM_NAVIS)], *vs)
     ]
 
 
@@ -72,7 +68,6 @@ def merge(ds):
     return {
         "latest_ts": merge_latest_ts(d["latest_ts"] for d in ds if d is not None),
         "wins": merge_wins(d["wins"] for d in ds if d is not None),
-        "picks": merge_picks(d["picks"] for d in ds if d is not None),
         "turns_to_win": merge_turns_to_win(
             d["turns_to_win"] for d in ds if d is not None
         ),

@@ -27,7 +27,7 @@ navis = [
     "フォルテ",
 ]
 
-[agg_periods]
+[agg-periods]
 "1week" = "1週間"
 "1month" = "1ヶ月間"
 "3month" = "3ヶ月間"
@@ -40,5 +40,5 @@ turns-to-win = "勝利ターン"
 turns-to-win-hint = "{turns}ターン目：{count}（{rate:.02f}）"
 
 [facets]
-picks-and-wins = "選択と勝利"
+head-to-head = "真っ向勝負"
 chip-usage = "チップ使用"

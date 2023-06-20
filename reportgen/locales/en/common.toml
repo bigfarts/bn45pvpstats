@@ -27,7 +27,7 @@ navis = [
     "Bass"
 ]
 
-[agg_periods]
+[agg-periods]
 "1week" = "1 week"
 "1month" = "1 month"
 "3month" = "3 months"
@@ -40,5 +40,5 @@ turns-to-win = "turns to win"
 turns-to-win-hint = "{turns} turns: {count} ({rate:.02f})"
 
 [facets]
-picks-and-wins = "Picks and wins"
+head-to-head = "Head to head"
 chip-usage = "Chip usage"

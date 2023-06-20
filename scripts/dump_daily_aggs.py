@@ -45,62 +45,27 @@ def get_wins(conn, agg_period, netplay_compatibility, on):
     return winrates
 
 
-def get_picks(conn, agg_period, netplay_compatibility, on):
-    cur = conn.cursor()
-    cur.execute(
-        """
-        with
-            picks as (
-                select
-                    unnest(array[winner, loser]) navi,
-                    count(*) n
-                from rounds
-                where
-                    netplay_compatibility = %s and
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
-                    winner != loser
-                group by navi
-            )
-        select
-            picks.navi navi,
-            coalesce(picks.n, 0) picks
-        from picks
-        order by navi
-        """,
-        (netplay_compatibility, agg_period, on),
-    )
-    pickrates = [0] * NUM_NAVIS
-    for navi, picks in cur:
-        pickrates[navi] = picks
-    return pickrates
-
-
 def get_turns_to_win(conn, agg_period, netplay_compatibility, on):
     cur = conn.cursor()
     cur.execute(
         """
-        with
-            turns as (
-                select
-                    winner navi,
-                    array_agg(turns) t
-                from rounds
-                where
-                    netplay_compatibility = %s and
-                    date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
-                    winner != loser
-                group by navi
-            )
         select
-            navi, t
-        from turns
-        order by navi
+            winner,
+            loser,
+            array_agg(turns) t
+        from rounds
+        where
+            netplay_compatibility = %s and
+            date_bin(%s, ts, timestamptz '2001-01-01')::date = %s and
+            winner != loser
+        group by winner, loser
+        order by winner, loser
         """,
         (netplay_compatibility, agg_period, on),
     )
-    turns_to_win = [[] for _ in range(NUM_NAVIS)]
-    for navi, t in cur:
-        turns_to_win[navi] = t
+    turns_to_win = [[[] for _ in range(NUM_NAVIS)] for _ in range(NUM_NAVIS)]
+    for winner, loser, t in cur:
+        turns_to_win[winner][loser] = t
     return turns_to_win
 
 
@@ -212,7 +177,6 @@ while d <= end:
     with conn:
         latest_ts = get_latest_ts(conn, agg_period, netplay_compatibility, d)
         wins = get_wins(conn, agg_period, netplay_compatibility, d)
-        picks = get_picks(conn, agg_period, netplay_compatibility, d)
         turns_to_win = get_turns_to_win(conn, agg_period, netplay_compatibility, d)
         chips = [
             get_chips(conn, agg_period, netplay_compatibility, d, navi)
@@ -224,7 +188,6 @@ while d <= end:
             {
                 "latest_ts": latest_ts.isoformat() if latest_ts is not None else None,
                 "wins": wins,
-                "picks": picks,
                 "turns_to_win": turns_to_win,
                 "chips": chips,
             },

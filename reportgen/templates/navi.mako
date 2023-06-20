@@ -15,14 +15,33 @@ def get_chips_ranking(winning_chips, picks):
         ranking.append((i, wins, total, picks, max(wins + losses for wins, losses in winning_chips)))
     ranking.sort(key=lambda kv: kv[2] / kv[3] if kv[3] != 0 else float('-inf'), reverse=True)
     return ranking
+
+def get_h2h_ranking(current_navi, row, all_picks, all_turns_to_win):
+    ranking = []
+    for i, w in enumerate(row):
+        if NAVIS[i] is None:
+            continue
+        wins = w[current_navi]
+        losses = sum(list(zip(*row))[i])
+        total = wins + losses
+
+        picks = all_picks[i] if all_picks else 0
+        turns_to_win = all_turns_to_win[i]
+
+        total_picks = sum(all_picks)
+        max_picks = max(all_picks)
+
+        ranking.append((i, wins, total, picks, total_picks, max_picks, turns_to_win))
+    ranking.sort(key=lambda kv: kv[3] / kv[4] if kv[4] != 0 else float('-inf'), reverse=True)
+    return ranking
 %>
 
 <div class="d-flex flex-grow-1 flex-shrink-1 flex-column" style="min-width: 0">
-    <h2 class="mx-1 my-2 fs-5">${LOCALE["common"]["facets"]["picks-and-wins"]}</h2>
+    <h2 class="mx-1 my-2 fs-5">${LOCALE["common"]["facets"]["head-to-head"]}</h2>
     <ul class="nav nav-tabs flex-shrink-0">
     % for name in ["alltime", "3month", "1month", "1week"]:
         <li class="nav-item">
-            <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/navis/${NAVIS[current_navi]}/${name}">${LOCALE["common"]["agg_periods"][name]}</a>
+            <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/navis/${NAVIS[current_navi]}/${name}">${LOCALE["common"]["agg-periods"][name]}</a>
         </li>
     % endfor
     </ul>
@@ -44,39 +63,51 @@ def get_chips_ranking(winning_chips, picks):
                     % endfor
                 </tr>
             </thead>
-            <tbody>
+                <tbody>
+                <%
+                legal_navis = [i for i, v in enumerate(NAVIS) if v is not None]
+
+                rankings_t = [
+                    [v if v is not None else [legal_navis[i], 0, 0, 0, 0, 0] for v in vs]
+                    for i, vs in enumerate(itertools.zip_longest(
+                        *(get_h2h_ranking(current_navi, tab["wins"], tab["picks"], tab["turns_to_win"]) for _, tab in data),
+                        fillvalue=None,
+                    ))
+                ]
+                %>
+                % for row in rankings_t:
                 <tr>
-                    % for date, tab in data:
+                    % for colno, (i, wins, total, picks, total_picks, max_picks, turns_to_win) in enumerate(row):
                     <%
-                        wins = sum(tab["wins"][current_navi]) if tab["wins"] else 0
-                        picks = tab["picks"][current_navi] if tab["picks"] else 0
-                        turns_to_win = tab["turns_to_win"][current_navi]
+                        navi = NAVIS[i]
+                        name = LOCALE["common"]["navis"][i]
+                    %>
+                    <td class="align-middle${" table-secondary" if picks == 0 else ""}">
+                        <a href="/${LANG}/navis/${navi}/${agg_period}" class="d-flex align-items-center">
+                            <img src="https://www.therockmanexezone.com/pages/exe45-pvp-patch/img/navi_${navi}.png" alt="${name}" style="image-rendering: pixelated" class="d-block me-2">
+                            <span class="name">${name}</span>
+                        </a>
+                    </td>
+                    % if total != 0:
+                    <%
+                        winrate = wins / total
+                        pickrate = picks / total_picks
+
+                        rel_winrate = winrate
+                        rel_pickrate = picks / max_picks
 
                         turns_to_win_counts = [0] * 16
                         for v in turns_to_win:
                             turns_to_win_counts[v] += 1
                         max_turns_to_win_count = max(turns_to_win_counts)
 
-                        losses = sum(tab["wins"][i][current_navi] for i in range(len(NAVIS))) if tab["wins"] else 0
-                        total = wins + losses
-                        total_picks = sum(tab["picks"])
-                        max_picks = max(tab["picks"], default=0)
-
-                        winrate = wins / total if total != 0 else None
-                        pickrate = picks / total_picks if total_picks != 0 else 0
-
-                        rel_winrate = winrate
-                        rel_pickrate = picks / max_picks if max_picks != 0 else 0
-
                         win_color = TealGrn_7.colors[round(rel_winrate * (len(TealGrn_7.colors) - 1))] if rel_winrate is not None else None
-                        pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))]
+                        pick_color = RedOr_7.colors[round(rel_pickrate * (len(RedOr_7.colors) - 1))] if rel_pickrate is not None else None
                     %>
-                    % if total != 0:
-                    <td></td>
                     <td class="align-middle">
                         <div><small>${picks}/${total_picks} (${f'{pickrate:.2f}'})</small></div>
                         <div style="width: 100%; height: 5px">
-                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
+                            <div style="background-color: ${f"rgb({pick_color[0]}, {pick_color[1]}, {pick_color[2]})" if pick_color is not None else "0, 0, 0"}; width: ${rel_pickrate * 100}%; height: 100%"></div>
                         </div>
                     </td>
                     <td class="align-middle">
@@ -98,12 +129,13 @@ def get_chips_ranking(winning_chips, picks):
                         </div>
                     </td>
                     % else:
-                    <td class="text-center align-middle${" table-secondary" if picks == 0 else ""}" colspan="4">
+                    <td class="text-center align-middle${" table-secondary" if picks == 0 else ""}" colspan="3">
                         ${LOCALE["common"]["no-data"]}
                     </td>
                     % endif
                     % endfor
                 </tr>
+                % endfor
             </tbody>
         </table>
     </div>
@@ -112,7 +144,7 @@ def get_chips_ranking(winning_chips, picks):
     <ul class="nav nav-tabs flex-shrink-0">
         % for name in ["alltime", "3month", "1month", "1week"]:
             <li class="nav-item">
-                <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/navis/${NAVIS[current_navi]}/${name}">${LOCALE["common"]["agg_periods"][name]}</a>
+                <a class="nav-link${" active" if name == agg_period else ""}" href="/${LANG}/navis/${NAVIS[current_navi]}/${name}">${LOCALE["common"]["agg-periods"][name]}</a>
             </li>
         % endfor
     </ul>
